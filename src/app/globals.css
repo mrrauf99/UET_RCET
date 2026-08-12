@@ -1,0 +1,812 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+/* Text scaled to 150%+ no longer fits the desktop navigation, so it switches to the menu dialog. */
+@custom-variant large-text (&:where([data-text-scale="150"] *, [data-text-scale="175"] *, [data-text-scale="200"] *));
+
+@theme inline {
+  --color-bg: var(--rcet-bg);
+  --color-surface: var(--rcet-surface);
+  --color-muted: var(--rcet-muted);
+  --color-fg: var(--rcet-fg);
+  --color-fg-muted: var(--rcet-fg-muted);
+  --color-border: var(--rcet-border);
+  --color-border-strong: var(--rcet-border-strong);
+  --color-band: var(--rcet-band);
+  --color-on-band: var(--rcet-on-band);
+  --color-on-band-muted: var(--rcet-on-band-muted);
+  --color-accent: var(--rcet-accent);
+  --color-accent-hover: var(--rcet-accent-hover);
+  --color-on-accent: var(--rcet-on-accent);
+  --color-link: var(--rcet-link);
+  --color-focus: var(--rcet-focus);
+  --color-focus-on-band: var(--rcet-focus-on-band);
+  --color-success: var(--rcet-success);
+  --color-warning: var(--rcet-warning);
+  --color-danger: var(--rcet-danger);
+  --color-danger-bg: var(--rcet-danger-bg);
+  --color-info: var(--rcet-info);
+
+  --font-display: var(--rcet-font-display);
+  --font-body: var(--rcet-font-body);
+  --font-sans: var(--rcet-font-body);
+
+  --shadow-sm: 0 1px 2px var(--rcet-shadow);
+  --shadow-md: 0 4px 12px var(--rcet-shadow);
+  --shadow-lg: 0 12px 32px var(--rcet-shadow-strong);
+}
+
+@theme {
+  --text-xs: 0.875rem;
+  --text-xs--line-height: 1.45;
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.5;
+  --text-base: 1.0625rem;
+  --text-base--line-height: 1.6;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.5;
+  --text-xl: clamp(1.375rem, 1.2rem + 0.6vw, 1.625rem);
+  --text-xl--line-height: 1.25;
+  --text-2xl: clamp(1.75rem, 1.4rem + 1.2vw, 2.25rem);
+  --text-2xl--line-height: 1.15;
+  --text-3xl: clamp(2.125rem, 1.6rem + 2vw, 3.25rem);
+  --text-3xl--line-height: 1.1;
+  --text-display: clamp(2.5rem, 1.6rem + 3.6vw, 4.5rem);
+  --text-display--line-height: 1.05;
+
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+
+  --container-content: 76rem;
+  --container-wide: 90rem;
+  --container-prose: 42rem;
+
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Light (default) */
+:root {
+  --rcet-bg: #fbfcfe;
+  --rcet-surface: #ffffff;
+  --rcet-muted: #eef2f8;
+  --rcet-fg: #0e1a33;
+  --rcet-fg-muted: #46536d;
+  --rcet-border: #c9d3e3;
+  --rcet-border-strong: #7a879f;
+  --rcet-band: #0a1f55;
+  --rcet-on-band: #ffffff;
+  --rcet-on-band-muted: #b4cce4;
+  --rcet-accent: #b3261e;
+  --rcet-accent-hover: #8f1d17;
+  --rcet-on-accent: #ffffff;
+  --rcet-link: #1d4fa8;
+  --rcet-focus: #0a1f55;
+  --rcet-focus-on-band: #f5c451;
+  --rcet-success: #1b6e3c;
+  --rcet-warning: #8a5300;
+  --rcet-danger: #a0153e;
+  --rcet-danger-bg: #fce8ee;
+  --rcet-info: #1d4fa8;
+  --rcet-shadow: rgb(10 31 85 / 0.1);
+  --rcet-shadow-strong: rgb(10 31 85 / 0.16);
+  --rcet-pattern-opacity: 0.18;
+
+  --rcet-font-display: var(--font-jost), "Segoe UI", system-ui, sans-serif;
+  --rcet-font-body: var(--font-atkinson), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --space-section: clamp(4rem, 3rem + 4vw, 7rem);
+  --space-gutter: clamp(1rem, 4vw, 2.5rem);
+  --header-height: 4.5rem;
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 600ms;
+
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --rcet-bg: #0a1225;
+  --rcet-surface: #111c35;
+  --rcet-muted: #18254a;
+  --rcet-fg: #eef2f8;
+  --rcet-fg-muted: #b7c3d9;
+  --rcet-border: #2d3b5e;
+  --rcet-border-strong: #7f8dab;
+  --rcet-band: #13224a;
+  --rcet-on-band: #eef2f8;
+  --rcet-on-band-muted: #b4cce4;
+  --rcet-accent: #f08a7e;
+  --rcet-accent-hover: #f6a79e;
+  --rcet-on-accent: #2a0805;
+  --rcet-link: #9dbbf2;
+  --rcet-focus: #f5c451;
+  --rcet-focus-on-band: #f5c451;
+  --rcet-success: #7fd39c;
+  --rcet-warning: #f2c46b;
+  --rcet-danger: #ff9cb0;
+  --rcet-danger-bg: #3a0d1b;
+  --rcet-info: #9dbbf2;
+  --rcet-shadow: rgb(0 0 0 / 0.4);
+  --rcet-shadow-strong: rgb(0 0 0 / 0.5);
+  color-scheme: dark;
+}
+
+/* Grayscale remaps tokens instead of filtering <html>, which would break position: fixed. */
+:root[data-grayscale="true"] {
+  --rcet-bg: #fcfcfc;
+  --rcet-surface: #ffffff;
+  --rcet-muted: #efefef;
+  --rcet-fg: #1a1a1a;
+  --rcet-fg-muted: #5a5a5a;
+  --rcet-border: #d4d4d4;
+  --rcet-border-strong: #8a8a8a;
+  --rcet-band: #1f1f1f;
+  --rcet-on-band: #ffffff;
+  --rcet-on-band-muted: #cfcfcf;
+  --rcet-accent: #4a4a4a;
+  --rcet-accent-hover: #333333;
+  --rcet-on-accent: #ffffff;
+  --rcet-link: #3a3a3a;
+  --rcet-focus: #1f1f1f;
+  --rcet-focus-on-band: #ffffff;
+  --rcet-success: #3d3d3d;
+  --rcet-warning: #3d3d3d;
+  --rcet-danger: #3d3d3d;
+  --rcet-danger-bg: #ededed;
+  --rcet-info: #3a3a3a;
+  --rcet-shadow: rgb(0 0 0 / 0.1);
+  --rcet-shadow-strong: rgb(0 0 0 / 0.16);
+}
+
+:root[data-theme="dark"][data-grayscale="true"] {
+  --rcet-bg: #121212;
+  --rcet-surface: #1e1e1e;
+  --rcet-muted: #262626;
+  --rcet-fg: #f2f2f2;
+  --rcet-fg-muted: #c2c2c2;
+  --rcet-border: #3a3a3a;
+  --rcet-border-strong: #8c8c8c;
+  --rcet-band: #262626;
+  --rcet-on-band: #f2f2f2;
+  --rcet-on-band-muted: #c2c2c2;
+  --rcet-accent: #d9d9d9;
+  --rcet-accent-hover: #ececec;
+  --rcet-on-accent: #111111;
+  --rcet-link: #e0e0e0;
+  --rcet-focus: #ffffff;
+  --rcet-focus-on-band: #ffffff;
+  --rcet-success: #d9d9d9;
+  --rcet-warning: #d9d9d9;
+  --rcet-danger: #e6e6e6;
+  --rcet-danger-bg: #2a2a2a;
+  --rcet-info: #e0e0e0;
+}
+
+/* High contrast is declared after grayscale so it wins when both are on. */
+:root[data-contrast="more"] {
+  --rcet-bg: #ffffff;
+  --rcet-surface: #ffffff;
+  --rcet-muted: #ffffff;
+  --rcet-fg: #000000;
+  --rcet-fg-muted: #000000;
+  --rcet-border: #000000;
+  --rcet-border-strong: #000000;
+  --rcet-band: #000000;
+  --rcet-on-band: #ffffff;
+  --rcet-on-band-muted: #ffffff;
+  --rcet-accent: #000000;
+  --rcet-accent-hover: #000000;
+  --rcet-on-accent: #ffffff;
+  --rcet-link: #0000b8;
+  --rcet-focus: #000000;
+  --rcet-focus-on-band: #ffffff;
+  --rcet-success: #004d1f;
+  --rcet-warning: #5c3300;
+  --rcet-danger: #8a0000;
+  --rcet-danger-bg: #ffffff;
+  --rcet-info: #0000b8;
+  --rcet-shadow: transparent;
+  --rcet-shadow-strong: transparent;
+  --rcet-pattern-opacity: 0;
+}
+
+:root[data-theme="dark"][data-contrast="more"] {
+  --rcet-bg: #000000;
+  --rcet-surface: #000000;
+  --rcet-muted: #000000;
+  --rcet-fg: #ffffff;
+  --rcet-fg-muted: #ffffff;
+  --rcet-border: #ffffff;
+  --rcet-border-strong: #ffffff;
+  --rcet-band: #000000;
+  --rcet-on-band: #ffffff;
+  --rcet-on-band-muted: #ffffff;
+  --rcet-accent: #ffff00;
+  --rcet-accent-hover: #ffff00;
+  --rcet-on-accent: #000000;
+  --rcet-link: #ffff00;
+  --rcet-focus: #ffff00;
+  --rcet-focus-on-band: #ffff00;
+  --rcet-success: #7cfc9a;
+  --rcet-warning: #ffd84d;
+  --rcet-danger: #ff8a8a;
+  --rcet-danger-bg: #000000;
+  --rcet-info: #7fdbff;
+}
+
+:root[data-theme="dark"][data-contrast="more"][data-grayscale="true"] {
+  --rcet-accent: #ffffff;
+  --rcet-accent-hover: #ffffff;
+  --rcet-link: #ffffff;
+  --rcet-focus: #ffffff;
+  --rcet-focus-on-band: #ffffff;
+  --rcet-success: #ffffff;
+  --rcet-warning: #ffffff;
+  --rcet-danger: #ffffff;
+  --rcet-info: #ffffff;
+}
+
+/* Colour presets override every theme/contrast/grayscale combination; the repeated attribute raises specificity above them. */
+:root[data-color-preset="black-white"] { --p-bg: #000000; --p-fg: #ffffff; }
+:root[data-color-preset="black-yellow"] { --p-bg: #000000; --p-fg: #ffff00; }
+:root[data-color-preset="blue-yellow"] { --p-bg: #002b80; --p-fg: #ffff00; }
+:root[data-color-preset="cream-black"] { --p-bg: #fff6d9; --p-fg: #000000; }
+:root[data-color-preset="yellow-black"] { --p-bg: #ffff00; --p-fg: #000000; }
+:root[data-color-preset="white-blue"] { --p-bg: #ffffff; --p-fg: #0a2a9e; }
+
+:root[data-color-preset][data-color-preset][data-color-preset][data-color-preset] {
+  --rcet-bg: var(--p-bg);
+  --rcet-surface: var(--p-bg);
+  --rcet-muted: var(--p-bg);
+  --rcet-fg: var(--p-fg);
+  --rcet-fg-muted: var(--p-fg);
+  --rcet-border: var(--p-fg);
+  --rcet-border-strong: var(--p-fg);
+  --rcet-band: var(--p-bg);
+  --rcet-on-band: var(--p-fg);
+  --rcet-on-band-muted: var(--p-fg);
+  --rcet-accent: var(--p-fg);
+  --rcet-accent-hover: var(--p-fg);
+  --rcet-on-accent: var(--p-bg);
+  --rcet-link: var(--p-fg);
+  --rcet-focus: var(--p-fg);
+  --rcet-focus-on-band: var(--p-fg);
+  --rcet-success: var(--p-fg);
+  --rcet-warning: var(--p-fg);
+  --rcet-danger: var(--p-fg);
+  --rcet-danger-bg: var(--p-bg);
+  --rcet-info: var(--p-fg);
+  --rcet-shadow: transparent;
+  --rcet-shadow-strong: transparent;
+  --rcet-pattern-opacity: 0;
+}
+
+:root[data-color-preset] a {
+  text-decoration-line: underline;
+}
+
+:root[data-color-preset] .band {
+  border-block: 2px solid var(--rcet-fg);
+}
+
+@layer base {
+  /* Tailwind v4 resets buttons to the default cursor. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+
+  html {
+    background-color: var(--rcet-bg);
+    scroll-padding-top: calc(var(--header-height) + var(--toolbar-offset, 0px) + 1rem);
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html:not([data-motion="reduce"]) {
+      scroll-behavior: smooth;
+    }
+  }
+
+  /* Native modal dialogs don't block page scroll on their own. */
+  html:has(dialog[open]:modal) {
+    overflow: hidden;
+  }
+
+  body {
+    background-color: var(--rcet-bg);
+    color: var(--rcet-fg);
+    font-family: var(--rcet-font-body);
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+    caret-color: var(--rcet-accent);
+    overflow-wrap: break-word;
+    scrollbar-color: var(--rcet-border-strong) var(--rcet-muted);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--rcet-font-display);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background-color: var(--rcet-band);
+    color: var(--rcet-on-band);
+  }
+
+  a {
+    text-underline-offset: 0.2em;
+    text-decoration-thickness: 1px;
+  }
+
+  /* --rcet-ring/--rcet-halo are set by .band and reset by .surface so nested panels get the right ring. */
+  :focus-visible {
+    outline: 3px solid var(--rcet-ring, var(--rcet-focus));
+    outline-offset: 2px;
+    box-shadow: 0 0 0 6px var(--rcet-halo, var(--rcet-bg));
+  }
+
+  .band {
+    --rcet-ring: var(--rcet-focus-on-band);
+    --rcet-halo: var(--rcet-band);
+    background-color: var(--rcet-band);
+    color: var(--rcet-on-band);
+  }
+
+  .surface {
+    --rcet-ring: initial;
+    --rcet-halo: var(--rcet-surface);
+    background-color: var(--rcet-surface);
+    color: var(--rcet-fg);
+  }
+
+  .band ::selection {
+    background-color: var(--rcet-on-band);
+    color: var(--rcet-band);
+  }
+
+  :root[data-contrast="more"] .band {
+    border-block: 2px solid var(--rcet-on-band);
+  }
+
+  :root[data-contrast="more"] a {
+    text-decoration-line: underline;
+  }
+
+  [data-girih] {
+    opacity: var(--rcet-pattern-opacity);
+  }
+
+  :root[data-contrast="more"] :is([data-girih], [data-banner-photo]),
+  :root[data-color-preset] [data-banner-photo] {
+    display: none;
+  }
+
+  :root[data-grayscale="true"] :is(img, video, iframe, picture) {
+    filter: grayscale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+:root[data-motion="reduce"] *,
+:root[data-motion="reduce"] *::before,
+:root[data-motion="reduce"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* Accessibility preferences (attributes written by src/lib/a11y/prefs.ts) */
+:root[data-text-scale="87.5"] { font-size: 87.5%; }
+:root[data-text-scale="112.5"] { font-size: 112.5%; }
+:root[data-text-scale="125"] { font-size: 125%; }
+:root[data-text-scale="150"] { font-size: 150%; }
+:root[data-text-scale="175"] { font-size: 175%; }
+:root[data-text-scale="200"] { font-size: 200%; }
+
+:root[data-font="arial"] { --rcet-font-body: Arial, Helvetica, sans-serif; --rcet-font-display: Arial, Helvetica, sans-serif; }
+:root[data-font="verdana"] { --rcet-font-body: Verdana, Geneva, sans-serif; --rcet-font-display: Verdana, Geneva, sans-serif; }
+:root[data-font="georgia"] { --rcet-font-body: Georgia, "Times New Roman", serif; --rcet-font-display: Georgia, "Times New Roman", serif; }
+
+/* At large text sizes long words ("Engineering" at display size) must be allowed to break so nothing scrolls sideways. */
+:root:is([data-text-scale="150"], [data-text-scale="175"], [data-text-scale="200"]) body {
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
+/* Spacing overrides follow WCAG 1.4.12 text-spacing values; the toolbar keeps its own metrics. */
+:root[data-line-height="1.8"] body :not(.a11y-toolbar *) { line-height: 1.8 !important; }
+:root[data-line-height="2.2"] body :not(.a11y-toolbar *) { line-height: 2.2 !important; }
+:root[data-line-height="2.6"] body :not(.a11y-toolbar *) { line-height: 2.6 !important; }
+:root[data-letter-spacing="0.06"] body :not(.a11y-toolbar *) { letter-spacing: 0.06em !important; word-spacing: 0.08em; }
+:root[data-letter-spacing="0.12"] body :not(.a11y-toolbar *) { letter-spacing: 0.12em !important; word-spacing: 0.16em; }
+:root[data-letter-spacing="0.2"] body :not(.a11y-toolbar *) { letter-spacing: 0.2em !important; word-spacing: 0.24em; }
+
+:root[data-links="highlight"] a:not(:focus-visible) {
+  text-decoration-line: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  outline: 2px dashed currentColor;
+  outline-offset: 2px;
+}
+
+:root[data-images="hidden"] :is(img, picture, video, [data-girih]) {
+  visibility: hidden;
+}
+
+/* Hotspots match the arrow tip at each size. */
+:root[data-cursor="large-black"], :root[data-cursor="large-black"] * { cursor: url("/cursors/large-black.svg") 6 4, auto !important; }
+:root[data-cursor="large-white"], :root[data-cursor="large-white"] * { cursor: url("/cursors/large-white.svg") 6 4, auto !important; }
+:root[data-cursor="x-large-black"], :root[data-cursor="x-large-black"] * { cursor: url("/cursors/x-large-black.svg") 9 6, auto !important; }
+:root[data-cursor="x-large-white"], :root[data-cursor="x-large-white"] * { cursor: url("/cursors/x-large-white.svg") 9 6, auto !important; }
+
+/* The fixed toolbar pushes the page down instead of covering it. */
+:root {
+  --toolbar-offset: 0px;
+}
+:root[data-toolbar="open"] {
+  --toolbar-offset: 5.25rem;
+}
+:root[data-toolbar="open"] body {
+  padding-top: var(--toolbar-offset);
+}
+
+[data-tts-active] {
+  outline: 3px solid var(--rcet-accent) !important;
+  outline-offset: 4px;
+  background-color: color-mix(in srgb, var(--rcet-accent) 12%, transparent);
+}
+
+/*
+ * Motion. Every entrance starts from the visible end state when motion is reduced or unsupported,
+ * so content never depends on an animation finishing.
+ */
+@keyframes girih-draw {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* transform, not the translate/scale properties, so Tailwind's translate utilities still compose. */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.25rem) scale(0.98);
+  }
+}
+
+@keyframes tip-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* The hero is the page's one authored moment: the photo is "constructed" left to right, like the seam below it. */
+  :root:not([data-motion="reduce"]) .girih-draw {
+    animation: girih-draw 900ms var(--ease-out) 150ms both;
+  }
+  :root:not([data-motion="reduce"]) .hero-enter {
+    animation: rise-in 600ms var(--ease-emphasized) calc(var(--i, 0) * 80ms) both;
+  }
+  :root:not([data-motion="reduce"]) .hero-wipe {
+    animation: girih-draw 800ms var(--ease-emphasized) 120ms both;
+  }
+
+  /* Menus and panels grow from their trigger so the relationship is visible. */
+  :root:not([data-motion="reduce"]) .pop-in:not([hidden]) {
+    transform-origin: top;
+    animation: pop-in var(--dur-base) var(--ease-emphasized);
+  }
+  :root:not([data-motion="reduce"]) .a11y-tip {
+    animation: tip-in var(--dur-fast) var(--ease-out);
+  }
+  :root:not([data-motion="reduce"]) .rise-in {
+    animation: rise-in 300ms var(--ease-emphasized);
+  }
+
+  /* Scroll-driven, so no JavaScript or observers; unsupported browsers simply show the content. */
+  @supports (animation-timeline: view()) {
+    :root:not([data-motion="reduce"]) .reveal {
+      animation: rise-in auto var(--ease-out) both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 55%;
+    }
+  }
+
+  /* Route changes: the outgoing page fades quickly, the new one rises in. Header and footer stay put. */
+  ::view-transition-old(.page-exit) {
+    animation: fade-out 120ms ease-in both;
+  }
+  ::view-transition-new(.page-enter) {
+    animation: rise-in 320ms var(--ease-emphasized) 60ms both;
+  }
+}
+
+/* The toolbar's "pause animations" must also stop page transitions, which the global * rule can't reach. */
+:root[data-motion="reduce"]::view-transition-group(*),
+:root[data-motion="reduce"]::view-transition-old(*),
+:root[data-motion="reduce"]::view-transition-new(*) {
+  animation: none !important;
+}
+
+/* Toolbar tool colours. White icons on each meet 3:1 for graphics (lowest is 6.1:1). */
+:root {
+  --tool-listen: #1b6e3c;
+  --tool-text: #1d4fa8;
+  --tool-language: #33415c;
+  --tool-colour: #3d3d3d;
+  --tool-ruler: #8a5300;
+  --tool-cursor: #34407a;
+  --tool-mask: #5a5a5a;
+  --tool-page: #0f6e6e;
+  --tool-icon: #ffffff;
+}
+:root[data-grayscale="true"] {
+  --tool-listen: #3d3d3d;
+  --tool-text: #3d3d3d;
+  --tool-language: #3d3d3d;
+  --tool-colour: #3d3d3d;
+  --tool-ruler: #3d3d3d;
+  --tool-cursor: #3d3d3d;
+  --tool-mask: #3d3d3d;
+  --tool-page: #3d3d3d;
+}
+:root[data-contrast="more"],
+:root[data-color-preset] {
+  --tool-listen: #000000;
+  --tool-text: #000000;
+  --tool-language: #000000;
+  --tool-colour: #000000;
+  --tool-ruler: #000000;
+  --tool-cursor: #000000;
+  --tool-mask: #000000;
+  --tool-page: #000000;
+}
+
+/* Toolbar surface: independent of the page theme so tools stay recognisable, but follows forced contrast. */
+.a11y-toolbar {
+  --tb-bg: #ffffff;
+  --tb-fg: #0e1a33;
+  --tb-muted: #46536d;
+  --tb-border: #7a879f;
+  --tb-hover: #eef2f8;
+  --tb-accent: #b3261e;
+  --tb-on-accent: #ffffff;
+  --tb-focus: #0a1f55;
+  --rcet-ring: var(--tb-focus);
+  --rcet-halo: var(--tb-bg);
+  background-color: var(--tb-bg);
+  color: var(--tb-fg);
+}
+.a11y-toolbar[data-dark] {
+  --tb-bg: #0a1225;
+  --tb-fg: #eef2f8;
+  --tb-muted: #b7c3d9;
+  --tb-border: #7f8dab;
+  --tb-hover: #18254a;
+  --tb-accent: #f08a7e;
+  --tb-on-accent: #2a0805;
+  --tb-focus: #f5c451;
+}
+:root[data-contrast="more"] .a11y-toolbar {
+  --tb-bg: #ffffff;
+  --tb-fg: #000000;
+  --tb-muted: #000000;
+  --tb-border: #000000;
+  --tb-hover: #ffffff;
+  --tb-accent: #000000;
+  --tb-on-accent: #ffffff;
+  --tb-focus: #000000;
+}
+:root[data-contrast="more"] .a11y-toolbar[data-dark] {
+  --tb-bg: #000000;
+  --tb-fg: #ffffff;
+  --tb-muted: #ffffff;
+  --tb-border: #ffffff;
+  --tb-hover: #000000;
+  --tb-accent: #ffff00;
+  --tb-on-accent: #000000;
+  --tb-focus: #ffff00;
+}
+:root[data-color-preset] .a11y-toolbar {
+  --tb-bg: var(--p-bg);
+  --tb-fg: var(--p-fg);
+  --tb-muted: var(--p-fg);
+  --tb-border: var(--p-fg);
+  --tb-hover: var(--p-bg);
+  --tb-accent: var(--p-fg);
+  --tb-on-accent: var(--p-bg);
+  --tb-focus: var(--p-fg);
+}
+
+/* Customizable select (progressive enhancement): the open list matches the site instead of the OS default. */
+@supports (appearance: base-select) {
+  .rcet-select,
+  .rcet-select::picker(select) {
+    appearance: base-select;
+  }
+  .rcet-select {
+    display: flex;
+    align-items: center;
+  }
+  /* Keep the site's chevron instead of the browser's arrow, and flip it while the list is open. */
+  .rcet-select::picker-icon {
+    display: none;
+  }
+  .rcet-select + .rcet-select-icon {
+    transition: rotate var(--dur-base) var(--ease-out);
+  }
+  .rcet-select:open + .rcet-select-icon {
+    rotate: 180deg;
+  }
+  .rcet-select:open {
+    border-color: var(--rcet-fg);
+  }
+  .rcet-select::picker(select) {
+    /* Open on whichever side has more room, so the list never collapses to a sliver. */
+    position-try-order: most-block-size;
+    max-block-size: 20rem;
+    margin-block: 6px;
+    padding: 0.375rem;
+    border: 1px solid var(--rcet-border-strong);
+    border-radius: var(--radius-lg);
+    background: var(--rcet-surface);
+    color: var(--rcet-fg);
+    box-shadow: var(--shadow-lg);
+  }
+  .rcet-select option {
+    min-height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-md);
+  }
+  .rcet-select option:is(:hover, :focus-visible) {
+    background: var(--rcet-band);
+    color: var(--rcet-on-band);
+  }
+  .rcet-select option:checked {
+    font-weight: 700;
+  }
+  .rcet-select option::checkmark {
+    order: 1;
+    margin-inline-start: auto;
+    color: var(--rcet-accent);
+  }
+  .rcet-select option:is(:hover, :focus-visible)::checkmark {
+    color: inherit;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    :root:not([data-motion="reduce"]) .rcet-select::picker(select) {
+      transition:
+        opacity var(--dur-base) var(--ease-out),
+        translate var(--dur-base) var(--ease-out),
+        overlay var(--dur-base) allow-discrete,
+        display var(--dur-base) allow-discrete;
+    }
+    :root:not([data-motion="reduce"]) .rcet-select:not(:open)::picker(select) {
+      opacity: 0;
+      translate: 0 -0.5rem;
+    }
+    @starting-style {
+      :root:not([data-motion="reduce"]) .rcet-select:open::picker(select) {
+        opacity: 0;
+        translate: 0 -0.5rem;
+      }
+    }
+  }
+}
+
+/* Google Translate injects a banner and pushes <body> down; the toolbar's Translation panel replaces that UI. */
+body > .skiptranslate,
+#goog-gt-tt,
+.goog-te-balloon-frame {
+  display: none !important;
+}
+body {
+  top: 0 !important;
+}
+.goog-text-highlight {
+  background: none !important;
+  box-shadow: none !important;
+}
+
+.a11y-tools {
+  scrollbar-width: thin;
+  scrollbar-color: var(--tb-border) transparent;
+}
+
+.student-life-gallery > li:last-child {
+  grid-column: span 2;
+  aspect-ratio: 8 / 3;
+}
+
+@media (min-width: 48rem) {
+  .student-life-gallery {
+    aspect-ratio: 8 / 3;
+  }
+  .student-life-gallery > li {
+    aspect-ratio: auto;
+  }
+  .student-life-gallery > li:last-child {
+    grid-column: span 1;
+    aspect-ratio: auto;
+  }
+}
+
+/* Upright type avoids synthesized italics; the quote icon supplies the quotation mark. */
+.pull-quote {
+  font-style: normal;
+  font-synthesis: none;
+}
+
+/* Mobile menu: a sheet that slides in from the right (where its toggle sits) over a dimmed page. */
+.nav-sheet::backdrop {
+  background-color: color-mix(in srgb, var(--rcet-band) 60%, transparent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-motion="reduce"]) .nav-sheet {
+    transition:
+      translate 320ms var(--ease-emphasized),
+      overlay 320ms allow-discrete,
+      display 320ms allow-discrete;
+  }
+  /* Closing runs the same slide in reverse before the dialog leaves the top layer. */
+  :root:not([data-motion="reduce"]) .nav-sheet:not([open]) {
+    translate: 100% 0;
+  }
+  :root:not([data-motion="reduce"]) .nav-sheet::backdrop {
+    transition:
+      background-color 320ms var(--ease-out),
+      overlay 320ms allow-discrete,
+      display 320ms allow-discrete;
+  }
+  :root:not([data-motion="reduce"]) .nav-sheet:not([open])::backdrop {
+    background-color: transparent;
+  }
+  @starting-style {
+    :root:not([data-motion="reduce"]) .nav-sheet[open] {
+      translate: 100% 0;
+    }
+    :root:not([data-motion="reduce"]) .nav-sheet[open]::backdrop {
+      background-color: transparent;
+    }
+  }
+}
