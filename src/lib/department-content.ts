@@ -2,7 +2,7 @@
 
 const TAB_NAV = new Set(["Introduction", "Programs Offered", "Faculty", "Labs", "PLOs", "PEOs"]);
 
-export type TabBlock = { id: string } & (
+type TabBlock = { id: string } & (
   | { kind: "heading"; text: string }
   | { kind: "paragraph"; text: string }
   | { kind: "table"; header: string[]; rows: string[][] }
@@ -58,12 +58,8 @@ export function parseTabBody(body: string): TabBlock[] {
 const ROLES = new Set(["Chairman", "Chairperson", "Head of Department", "Incharge", "In-charge"]);
 
 export function parseFaculty(body: string): FacultyMember[] {
-  const lines = new Set(
-    body
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line && !TAB_NAV.has(line) && line !== "Faculty:"),
-  );
+  const trimmed = body.split("\n").map((line) => line.trim());
+  const lines = new Set(trimmed.filter((line) => line && !TAB_NAV.has(line) && line !== "Faculty:"));
   const people: FacultyMember[] = [];
   let chunk: string[] = [];
 
@@ -79,7 +75,7 @@ export function parseFaculty(body: string): FacultyMember[] {
     chunk = [];
   };
 
-  for (const line of body.split("\n").map((value) => value.trim())) {
+  for (const line of trimmed) {
     if (line === "See Profile") flush();
     else if (lines.has(line)) chunk.push(line);
   }
@@ -110,7 +106,7 @@ export function parseLabs(body: string): Lab[] {
   return labs;
 }
 
-export interface ChairmanMessage {
+interface ChairmanMessage {
   paragraphs: string[];
   name: string;
 }

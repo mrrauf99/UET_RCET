@@ -12,8 +12,8 @@ import { LinkButton } from "@/components/ui/LinkButton";
 import { departmentBannerImages, departmentCardImages } from "@/content/department-media";
 import { facultyPhotos } from "@/content/faculty-photos";
 import { getDepartment, getDepartments, getDepartmentTabs, getImage, getPage, getPrograms } from "@/lib/content";
-import { parseChairmanMessage, parseFaculty, parseLabs } from "@/lib/department-content";
-import { shortDepartmentName } from "@/lib/format";
+import { parseChairmanMessage, parseFaculty, parseLabs, parseTabBody } from "@/lib/department-content";
+import { levelLabels, shortDepartmentName } from "@/lib/format";
 import { ADMISSIONS_PORTAL_URL } from "@/lib/site";
 import type { ImageAsset } from "@/types/content";
 
@@ -35,14 +35,13 @@ export async function generateMetadata({ params }: PageProps<"/departments/[slug
   };
 }
 
-const levelLabel = { undergraduate: "Undergraduate", postgraduate: "Postgraduate" } as const;
-
 // Names on the landing page drop titles the faculty list keeps ("Dr. X" vs "Engr. Dr. X").
 const bareName = (name: string) => name.replace(/^((engr|dr|mr|ms|mrs|prof)\.?\s+)+/i, "").toLowerCase();
 
-function TabHeading({ id, children }: { id: string; children: string }) {
+/** `echo` headings repeat the tab label shown right above them, so they stay for screen readers only. */
+function TabHeading({ id, echo = false, children }: { id: string; echo?: boolean; children: string }) {
   return (
-    <h2 id={id} className="text-2xl">
+    <h2 id={id} className={echo ? "sr-only" : "text-2xl"}>
       {children}
     </h2>
   );
@@ -75,7 +74,15 @@ export default async function DepartmentPage({ params }: PageProps<"/departments
     ? Object.entries(facultyPhotos).find(([name]) => bareName(name) === bareName(chairman.name))?.[1]
     : undefined;
   const plos = tab("plos")?.originalBody;
-  const peos = tab("peos")?.originalBody;
+  const peoBody = tab("peos")?.originalBody;
+  // The source site's PEOs for some departments repeat PLO descriptions word for word; listing them
+  // again under "objectives" would duplicate and mislabel them (tracked as the peos-repeat-plos issue).
+  const peoTexts = peoBody
+    ? parseTabBody(peoBody)
+        .flatMap((block) => (block.kind === "table" ? block.rows.map((row) => row.at(-1) ?? "") : [block.text]))
+        .filter((text) => text.length > 40)
+    : [];
+  const peos = peoTexts.length > 0 && plos && peoTexts.every((text) => plos.includes(text)) ? undefined : peoBody;
 
   const panels: (DepartmentTab | null)[] = [
     {
@@ -85,8 +92,8 @@ export default async function DepartmentPage({ params }: PageProps<"/departments
         <div className="flex flex-col gap-16">
           <div className="grid gap-8 lg:grid-cols-[1.3fr_1fr] lg:items-start">
             <div>
-              <TabHeading id="introduction-title">Introduction</TabHeading>
-              <p className="mt-6 max-w-prose text-lg">
+              <TabHeading id="introduction-title" echo>Introduction</TabHeading>
+              <p className="max-w-prose text-lg">
                 {department.description ?? "No introduction has been published yet."}
               </p>
             </div>
@@ -127,13 +134,13 @@ export default async function DepartmentPage({ params }: PageProps<"/departments
       label: "Programs Offered",
       content: (
         <>
-          <TabHeading id="programs-title">Programs offered</TabHeading>
-          <ul className="mt-6 divide-y divide-border border-y border-border">
+          <TabHeading id="programs-title" echo>Programs offered</TabHeading>
+          <ul className="divide-y divide-border border-y border-border">
             {programs.map((program) => (
               <li key={program.id} className="flex flex-wrap items-baseline justify-between gap-2 py-4">
                 <span className="text-lg font-bold">{program.name}</span>
                 <span className="text-sm text-fg-muted">
-                  {levelLabel[program.level]}
+                  {levelLabels[program.level]}
                   {program.duration ? ` · ${program.duration}` : ""}
                 </span>
               </li>
@@ -154,10 +161,8 @@ export default async function DepartmentPage({ params }: PageProps<"/departments
           label: "Faculty",
           content: (
             <>
-              <TabHeading id="faculty-title">Faculty</TabHeading>
-              <div className="mt-6">
-                <FacultyList people={people} />
-              </div>
+              <TabHeading id="faculty-title" echo>Faculty</TabHeading>
+              <FacultyList people={people} />
             </>
           ),
         }
@@ -168,10 +173,8 @@ export default async function DepartmentPage({ params }: PageProps<"/departments
           label: "Labs",
           content: (
             <>
-              <TabHeading id="labs-title">Laboratories</TabHeading>
-              <div className="mt-6">
-                <LabList labs={labs} photos={labPhotos} />
-              </div>
+              <TabHeading id="labs-title" echo>Laboratories</TabHeading>
+              <LabList labs={labs} photos={labPhotos} />
             </>
           ),
         }
@@ -184,7 +187,7 @@ export default async function DepartmentPage({ params }: PageProps<"/departments
             <>
               <TabHeading id="plos-title">Program learning outcomes</TabHeading>
               <div className="mt-6">
-                <TabContent body={plos} />
+                <TabContent body={plos} label="Program learning outcomes" />
               </div>
             </>
           ),
@@ -198,7 +201,7 @@ export default async function DepartmentPage({ params }: PageProps<"/departments
             <>
               <TabHeading id="peos-title">Program educational objectives</TabHeading>
               <div className="mt-6">
-                <TabContent body={peos} />
+                <TabContent body={peos} label="Program educational objectives" />
               </div>
             </>
           ),
@@ -211,7 +214,6 @@ export default async function DepartmentPage({ params }: PageProps<"/departments
       title={shortDepartmentName(department.name)}
       banner={departmentBannerImages[slug] ?? null}
       contained={false}
-      hideBannerTitle
     >
       <DepartmentTabs label={`${shortDepartmentName(department.name)} sections`} tabs={panels.filter((panel) => panel !== null)} />
     </PageShell>

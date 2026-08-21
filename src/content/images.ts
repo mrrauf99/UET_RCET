@@ -2045,7 +2045,7 @@ export const imageAssets = [
     "sourcePages": ["https://rcet.uet.edu.pk/"],
     "loadedWhenChecked": true,
     "approvedLocalPath": "/images/departments/computer-science-v2.webp",
-    "approvedAlt": "Department of Computer Science and Engineering"
+    "approvedAlt": "Hands typing on a laptop and keyboard in front of a monitor showing code"
   },
   {
     "id": "image-135",
@@ -2055,7 +2055,7 @@ export const imageAssets = [
     "sourcePages": ["https://rcet.uet.edu.pk/"],
     "loadedWhenChecked": true,
     "approvedLocalPath": "/images/departments/mechanical-engineering-v2.webp",
-    "approvedAlt": "Department of Mechanical Engineering"
+    "approvedAlt": "Metal gears resting on mechanical design drawings"
   },
   {
     "id": "image-136",
@@ -2065,7 +2065,7 @@ export const imageAssets = [
     "sourcePages": ["https://rcet.uet.edu.pk/"],
     "loadedWhenChecked": true,
     "approvedLocalPath": "/images/departments/electrical-engineering-v2.webp",
-    "approvedAlt": "Department of Electrical Engineering"
+    "approvedAlt": "Colour-coded wiring inside an electrical control panel"
   },
   {
     "id": "image-137",
@@ -2075,7 +2075,7 @@ export const imageAssets = [
     "sourcePages": ["https://rcet.uet.edu.pk/"],
     "loadedWhenChecked": true,
     "approvedLocalPath": "/images/departments/industrial-manufacturing-engineering-v2.webp",
-    "approvedAlt": "Department of Industrial and Manufacturing Engineering"
+    "approvedAlt": "Engineer in a hard hat and safety vest using a laptop on a factory floor"
   },
   {
     "id": "image-138",
@@ -2084,7 +2084,7 @@ export const imageAssets = [
     "originalAlt": ["Department of Natural Sciences & Humanities"],
     "sourcePages": ["https://rcet.uet.edu.pk/"],
     "loadedWhenChecked": true,
-    "approvedLocalPath": "/images/departments/natural-sciences-humanities-v2.webp",
-    "approvedAlt": "Department of Natural Sciences & Humanities"
+    "approvedLocalPath": "/images/departments/natural-sciences-humanities-v2-plain.webp",
+    "approvedAlt": "Illustrated science icons around an atom, including a microscope, a flask and test tubes"
   }
 ] satisfies readonly ImageAsset[];
