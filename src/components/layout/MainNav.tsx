@@ -16,7 +16,7 @@ function isCurrent(pathname: string, href: string) {
 }
 
 const itemClasses =
-  "flex min-h-11 items-center gap-1 rounded-sm px-3 text-sm font-bold whitespace-nowrap text-on-band underline-offset-8 decoration-2 decoration-transparent transition-[text-decoration-color] duration-(--dur-base) hover:underline hover:decoration-current aria-[current=page]:underline aria-[current=page]:decoration-accent";
+  "flex min-h-11 items-center gap-1 rounded-sm px-3 text-sm font-bold whitespace-nowrap text-on-band underline-offset-8 decoration-2 decoration-transparent transition-[color,text-decoration-color,background-color] duration-(--dur-base) hover:bg-on-band/10 hover:text-on-band hover:underline hover:decoration-current aria-[current=page]:bg-on-band/10 aria-[current=page]:underline aria-[current=page]:decoration-accent";
 
 export function MainNav({ items }: MainNavProps) {
   const pathname = usePathname();

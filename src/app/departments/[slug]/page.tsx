@@ -9,7 +9,7 @@ import { TabContent } from "@/components/sections/TabContent";
 import { Icon } from "@/components/ui/Icon";
 import { ImageFrame } from "@/components/ui/ImageFrame";
 import { LinkButton } from "@/components/ui/LinkButton";
-import { departmentCardImages } from "@/content/department-media";
+import { departmentBannerImages, departmentCardImages } from "@/content/department-media";
 import { facultyPhotos } from "@/content/faculty-photos";
 import { getDepartment, getDepartments, getDepartmentTabs, getImage, getPage, getPrograms } from "@/lib/content";
 import { parseChairmanMessage, parseFaculty, parseLabs } from "@/lib/department-content";
@@ -53,12 +53,11 @@ export default async function DepartmentPage({ params }: PageProps<"/departments
   const department = await getDepartment(slug);
   if (!department) notFound();
 
-  const [programs, tabs, photo, landing, banner] = await Promise.all([
+  const [programs, tabs, photo, landing] = await Promise.all([
     getPrograms({ departmentId: slug }),
     getDepartmentTabs(slug),
-    getImage(department.imageId),
+    getImage(departmentCardImages[slug] ?? department.imageId),
     getPage(`departments-${slug}`),
-    departmentCardImages[slug] ? getImage(departmentCardImages[slug]) : null,
   ]);
   const tab = (suffix: string) => tabs.find((item) => item.id === `${slug}-${suffix}`);
   const faculty = tab("faculty");
@@ -210,8 +209,9 @@ export default async function DepartmentPage({ params }: PageProps<"/departments
   return (
     <PageShell
       title={shortDepartmentName(department.name)}
-      banner={banner?.approvedLocalPath}
+      banner={departmentBannerImages[slug] ?? null}
       contained={false}
+      hideBannerTitle
     >
       <DepartmentTabs label={`${shortDepartmentName(department.name)} sections`} tabs={panels.filter((panel) => panel !== null)} />
     </PageShell>

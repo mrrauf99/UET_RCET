@@ -84,7 +84,7 @@ export function MobileNav({ items, utilityLinks }: MobileNavProps) {
                   <Link
                     href={item.href}
                     onClick={closeMenu}
-                    className="flex min-h-14 items-center text-lg font-bold aria-[current=page]:text-accent"
+                    className="flex min-h-14 items-center rounded-sm px-3 text-lg font-bold transition-[color,background-color] duration-(--dur-fast) hover:bg-muted hover:text-accent focus-visible:bg-muted focus-visible:text-accent aria-[current=page]:bg-muted aria-[current=page]:text-accent"
                     aria-current={isCurrent(pathname, item.href) ? "page" : undefined}
                   >
                     {item.label}
@@ -94,7 +94,7 @@ export function MobileNav({ items, utilityLinks }: MobileNavProps) {
                 <li key={item.id}>
                   <button
                     type="button"
-                    className="flex min-h-14 w-full items-center justify-between text-start text-lg font-bold"
+                    className="flex min-h-14 w-full items-center justify-between rounded-sm px-3 text-start text-lg font-bold transition-[color,background-color] duration-(--dur-fast) hover:bg-muted hover:text-accent focus-visible:bg-muted focus-visible:text-accent"
                     aria-expanded={expanded === item.id}
                     aria-controls={`mobile-group-${item.id}`}
                     onClick={() => setExpanded((current) => (current === item.id ? null : item.id))}
@@ -112,7 +112,7 @@ export function MobileNav({ items, utilityLinks }: MobileNavProps) {
                           <Link
                             href={child.href}
                             onClick={closeMenu}
-                            className="flex min-h-11 items-center ps-4 text-base aria-[current=page]:font-bold"
+                            className="flex min-h-11 items-center rounded-sm px-3 ps-7 text-base transition-[color,background-color] duration-(--dur-fast) hover:bg-muted hover:text-accent focus-visible:bg-muted focus-visible:text-accent aria-[current=page]:bg-muted aria-[current=page]:font-bold aria-[current=page]:text-accent"
                             aria-current={isCurrent(pathname, child.href) ? "page" : undefined}
                           >
                             {child.label}
@@ -134,7 +134,7 @@ export function MobileNav({ items, utilityLinks }: MobileNavProps) {
                 href={link.href}
                 target={link.external ? "_blank" : undefined}
                 rel={link.external ? "noopener noreferrer" : undefined}
-                className="flex min-h-11 items-center gap-2 text-link underline"
+                className="flex min-h-11 items-center gap-2 rounded-sm px-3 text-link underline transition-colors duration-(--dur-fast) hover:text-accent focus-visible:text-accent"
               >
                 {link.label}
                 {link.external ? (

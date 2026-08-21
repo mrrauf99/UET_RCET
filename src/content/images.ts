@@ -2039,52 +2039,52 @@ export const imageAssets = [
   },
   {
     "id": "image-134",
-    "sourceUrl": "https://unsplash.com/photos/a-group-of-people-working-on-computers-in-a-room-3yb7ZsaY0LY",
-    "purpose": "Stock photograph (Unsplash License, Anastassia Anufrieva via Unsplash) illustrating computer science on the homepage department card; not an RCET photograph",
-    "originalAlt": [],
-    "sourcePages": [],
+    "sourceUrl": "https://www.uet.edu.pk/.galleries/program/1104.jpg",
+    "purpose": "Department card photograph used by the live RCET homepage and departments page",
+    "originalAlt": ["Department of Computer Science and Engineering"],
+    "sourcePages": ["https://rcet.uet.edu.pk/"],
     "loadedWhenChecked": true,
-    "approvedLocalPath": "/images/departments/computer-science.webp",
-    "approvedAlt": "Students working at desktop computers in a bright computer lab"
+    "approvedLocalPath": "/images/departments/computer-science-v2.webp",
+    "approvedAlt": "Department of Computer Science and Engineering"
   },
   {
     "id": "image-135",
-    "sourceUrl": "https://unsplash.com/photos/metal-rod-machining-on-lathe-eaanLTG7TCU",
-    "purpose": "Stock photograph (Unsplash License, Sven Daniel via Unsplash) illustrating mechanical engineering on the homepage department card; not an RCET photograph",
-    "originalAlt": [],
-    "sourcePages": [],
+    "sourceUrl": "https://rcet.uet.edu.pk/images/ME.jpg",
+    "purpose": "Department card photograph used by the live RCET homepage and departments page",
+    "originalAlt": ["Department of Mechanical Engineering"],
+    "sourcePages": ["https://rcet.uet.edu.pk/"],
     "loadedWhenChecked": true,
-    "approvedLocalPath": "/images/departments/mechanical-engineering.webp",
-    "approvedAlt": "A CNC lathe machining a polished steel shaft"
+    "approvedLocalPath": "/images/departments/mechanical-engineering-v2.webp",
+    "approvedAlt": "Department of Mechanical Engineering"
   },
   {
     "id": "image-136",
-    "sourceUrl": "https://unsplash.com/photos/electronic-circuit-boards-near-tester-3GZi6OpSDcY",
-    "purpose": "Stock photograph (Unsplash License, Nicolas Thomas via Unsplash) illustrating electrical engineering on the homepage department card; not an RCET photograph",
-    "originalAlt": [],
-    "sourcePages": [],
+    "sourceUrl": "https://www.uet.edu.pk/.galleries/program/1107.jpg",
+    "purpose": "Department card photograph used by the live RCET homepage and departments page",
+    "originalAlt": ["Department of Electrical Engineering"],
+    "sourcePages": ["https://rcet.uet.edu.pk/"],
     "loadedWhenChecked": true,
-    "approvedLocalPath": "/images/departments/electrical-engineering.webp",
-    "approvedAlt": "Breadboard circuits wired with jumper cables beside a digital multimeter"
+    "approvedLocalPath": "/images/departments/electrical-engineering-v2.webp",
+    "approvedAlt": "Department of Electrical Engineering"
   },
   {
     "id": "image-137",
-    "sourceUrl": "https://unsplash.com/photos/a-factory-filled-with-lots-of-orange-machines-8gr6bObQLOI",
-    "purpose": "Stock photograph (Unsplash License, Simon Kadula via Unsplash) illustrating industrial and manufacturing engineering on the homepage department card; not an RCET photograph",
-    "originalAlt": [],
-    "sourcePages": [],
+    "sourceUrl": "https://rcet.uet.edu.pk/images/IME.jpg",
+    "purpose": "Department card photograph used by the live RCET homepage and departments page",
+    "originalAlt": ["Department of Industrial and Manufacturing Engineering"],
+    "sourcePages": ["https://rcet.uet.edu.pk/"],
     "loadedWhenChecked": true,
-    "approvedLocalPath": "/images/departments/industrial-manufacturing-engineering.webp",
-    "approvedAlt": "Robotic arms working along an automated production line"
+    "approvedLocalPath": "/images/departments/industrial-manufacturing-engineering-v2.webp",
+    "approvedAlt": "Department of Industrial and Manufacturing Engineering"
   },
   {
     "id": "image-138",
-    "sourceUrl": "https://unsplash.com/photos/many-glass-bottles-and-flasks-filled-with-colorful-liquids-z65cBJZOCP8",
-    "purpose": "Stock photograph (Unsplash License, Julia Taubitz via Unsplash) illustrating natural sciences on the homepage department card; not an RCET photograph",
-    "originalAlt": [],
-    "sourcePages": [],
+    "sourceUrl": "https://rcet.uet.edu.pk/images/HN.jpg",
+    "purpose": "Department card photograph used by the live RCET homepage and departments page",
+    "originalAlt": ["Department of Natural Sciences & Humanities"],
+    "sourcePages": ["https://rcet.uet.edu.pk/"],
     "loadedWhenChecked": true,
-    "approvedLocalPath": "/images/departments/natural-sciences-humanities.webp",
-    "approvedAlt": "Rows of stoppered laboratory flasks holding amber liquid samples"
+    "approvedLocalPath": "/images/departments/natural-sciences-humanities-v2.webp",
+    "approvedAlt": "Department of Natural Sciences & Humanities"
   }
 ] satisfies readonly ImageAsset[];

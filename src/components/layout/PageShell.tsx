@@ -10,22 +10,25 @@ interface PageShellProps {
   banner?: string | null;
   /** False when the page lays out its own full-width bands (e.g. a sticky tab bar). */
   contained?: boolean;
+  /** Keeps the semantic page title without duplicating text already present in a banner image. */
+  hideBannerTitle?: boolean;
   children: ReactNode;
 }
 
-export function PageShell({ title, lead, banner, contained = true, children }: PageShellProps) {
+export function PageShell({ title, lead, banner, contained = true, hideBannerTitle = false, children }: PageShellProps) {
   return (
     <>
-      <div className="band relative isolate overflow-hidden">
+      <div className="band relative isolate overflow-hidden bg-[#0b2f7a]">
         {banner ? (
           <div data-banner-photo aria-hidden="true" className="absolute inset-0 -z-10">
-            <Image src={banner} alt="" fill priority sizes="100vw" className="object-cover" />
-            {/* Solid behind the text column, easing off to the right so the photo still reads. */}
-            <div className="absolute inset-0 bg-linear-to-r from-band via-band/90 to-band/55" />
+            <Image src={banner} alt="" fill priority quality={90} sizes="100vw" className="object-cover" />
+            {!hideBannerTitle ? (
+              <div className="absolute inset-0 bg-linear-to-r from-band via-band/90 to-band/55" />
+            ) : null}
           </div>
         ) : null}
         <Container className={banner ? "pt-12 pb-20 md:pb-28" : "pt-12 pb-14 md:pb-16"}>
-          <h1 className="max-w-[20ch] text-3xl">{title}</h1>
+          <h1 className={hideBannerTitle ? "sr-only" : "max-w-[20ch] text-3xl"}>{title}</h1>
           {lead ? <p className="mt-4 max-w-prose text-lg text-on-band-muted">{lead}</p> : null}
         </Container>
         <GirihSeam />

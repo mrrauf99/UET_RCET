@@ -55,7 +55,10 @@ export default async function HomePage() {
     homepage.hero.imageIds[0] ? getImage(homepage.hero.imageIds[0]) : null,
     getImage(homepage.introduction.imageId),
     Promise.all(
-      departments.map(async (d) => [d.imageId, await getImage(departmentCardImages[d.id] ?? d.imageId)] as const),
+      departments.map(async (department) => [
+        department.id,
+        await getImage(departmentCardImages[department.id] ?? department.imageId),
+      ] as const),
     ),
     getImage(homepage.coordinatorMessage.imageId),
     getImage("image-037"),

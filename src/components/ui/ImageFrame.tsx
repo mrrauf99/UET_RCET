@@ -31,6 +31,7 @@ export function ImageFrame({ image, sizes, ratio = "4/3", chamfer = false, prior
           alt={image.approvedAlt ?? ""}
           fill
           sizes={sizes}
+          quality={90}
           priority={priority}
           className="object-cover"
         />
