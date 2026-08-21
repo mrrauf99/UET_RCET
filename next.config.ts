@@ -1,4 +1,3 @@
-import path from "node:path";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -7,7 +6,7 @@ const nextConfig: NextConfig = {
   },
   // A lockfile in a parent folder would otherwise be picked as the workspace root.
   turbopack: {
-    root: path.join(__dirname),
+    root: __dirname,
   },
   // Keep links and search rankings from the previous rcet.uet.edu.pk site working.
   async redirects() {

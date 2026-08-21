@@ -82,14 +82,6 @@ export interface NewsItem {
   readonly source: ContentSource;
 }
 
-export interface Stat {
-  readonly id: string;
-  readonly label: string;
-  readonly value: number;
-  readonly unit: string | null;
-  readonly source: ContentSource;
-}
-
 export interface UniversityInfo {
   readonly name: string;
   readonly shortName: string;

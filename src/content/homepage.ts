@@ -1,4 +1,4 @@
-import type { HeroContent, IntroductionContent, CoordinatorMessage, CampusLifeContent, FooterContent, CallToAction, Stat } from "../types/content";
+import type { HeroContent, IntroductionContent, CoordinatorMessage, CampusLifeContent, FooterContent, CallToAction } from "../types/content";
 
 export const hero = {
   "heading": null,
@@ -212,6 +212,4 @@ export const callsToAction = [
     }
   }
 ] satisfies readonly CallToAction[];
-
-export const stats: readonly Stat[] = [];
 

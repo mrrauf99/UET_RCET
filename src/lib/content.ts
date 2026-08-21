@@ -1,6 +1,6 @@
-import { departments, faculties, programs } from "@/content/academics";
+import { departments, programs } from "@/content/academics";
 import { facilities } from "@/content/facilities";
-import { callsToAction, campusLife, coordinatorMessage, footer, hero, introduction, stats } from "@/content/homepage";
+import { callsToAction, campusLife, coordinatorMessage, footer, hero, introduction } from "@/content/homepage";
 import { imageAssets } from "@/content/images";
 import { newsItems } from "@/content/news";
 import { departmentTabs, extractedPages } from "@/content/pages";
@@ -24,7 +24,7 @@ export async function getFooter() {
 }
 
 export async function getHomepage() {
-  return { hero, introduction, coordinatorMessage, campusLife, stats, callsToAction };
+  return { hero, introduction, coordinatorMessage, campusLife, callsToAction };
 }
 
 export async function getDepartments(): Promise<readonly Department[]> {
@@ -37,10 +37,6 @@ export async function getDepartment(slug: string): Promise<Department | null> {
 
 export async function getDepartmentTabs(departmentId: string) {
   return departmentTabs.filter((tab) => tab.id.startsWith(`${departmentId}-`));
-}
-
-export async function getFaculties() {
-  return faculties;
 }
 
 export async function getPrograms(filter: { departmentId?: string; level?: Program["level"] } = {}): Promise<readonly Program[]> {
