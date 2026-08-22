@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { PageSection, PageShell } from "@/components/layout/PageShell";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { getDepartments, getPrograms, getUniversity } from "@/lib/content";
-import { shortDepartmentName } from "@/lib/format";
+import { levelLabels, shortDepartmentName, telHref } from "@/lib/format";
 import { ADMISSIONS_PORTAL_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -42,7 +42,7 @@ export default async function AdmissionsPage() {
             <li key={program.id} className="flex flex-wrap items-baseline justify-between gap-2 py-4">
               <span className="text-lg font-bold">{program.name}</span>
               <span className="text-sm text-fg-muted">
-                {names.get(program.departmentId)} · {program.level === "undergraduate" ? "Undergraduate" : "Postgraduate"}
+                {names.get(program.departmentId)} · {levelLabels[program.level]}
               </span>
             </li>
           ))}
@@ -51,7 +51,7 @@ export default async function AdmissionsPage() {
 
       <PageSection id="contact" title="Questions">
         <p className="max-w-prose text-lg">
-          Call <a href={`tel:+92${university.phone.replace(/\D/g, "").replace(/^0/, "")}`} className="text-link underline">{university.phone}</a>{" "}
+          Call <a href={telHref(university.phone)} className="text-link underline">{university.phone}</a>{" "}
           or email <a href={`mailto:${university.email}`} className="text-link underline">{university.email}</a>.
         </p>
       </PageSection>

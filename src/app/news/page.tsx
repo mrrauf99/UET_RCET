@@ -24,7 +24,7 @@ export default async function NewsPage() {
               <li key={item.id} className="flex flex-col gap-2 py-6">
                 <span className="text-sm font-bold text-fg-muted">{item.kind === "event" ? "Event" : "News"}</span>
                 <h2 className="text-xl">
-                  <a href={item.href} className="inline-flex items-center gap-2 underline-offset-4 hover:underline">
+                  <a href={item.href} className="inline-flex min-h-11 items-center gap-2 underline-offset-4 hover:underline">
                     {item.title}
                     {external ? (
                       <>

@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { ImageFrame } from "@/components/ui/ImageFrame";
 import { LinkButton } from "@/components/ui/LinkButton";
@@ -27,7 +27,7 @@ export function Departments({ departments, programs, facilities, images }: Depar
             const labs = facilities.filter((facility) => facility.source.sourceUrl === department.href && /\blab\b/i.test(facility.name));
             return (
               <li key={department.id} className="grid gap-6 py-8 md:grid-cols-[15rem_1fr] lg:gap-10">
-                <ImageFrame image={images.get(department.id) ?? null} ratio="4/3" chamfer sizes="(min-width: 768px) 240px, 100vw" className="rounded-md" />
+                <ImageFrame image={images.get(department.id) ?? null} decorative ratio="4/3" chamfer sizes="(min-width: 768px) 240px, 100vw" className="rounded-md" />
                 <div>
                   <h3 className="text-2xl">
                     <Link href={`/departments/${department.id}`} className="inline-flex min-h-11 items-center decoration-accent underline-offset-4 hover:underline">{shortDepartmentName(department.name)}</Link>
@@ -43,7 +43,9 @@ export function Departments({ departments, programs, facilities, images }: Depar
                       <div>
                         <h4 className="font-body text-base font-bold">Laboratories</h4>
                         <p className="mt-2 text-fg-muted">{labs.slice(0, 2).map((lab) => lab.name).join("; ")}.</p>
-                        <Link href={`/departments/${department.id}#labs`} className="mt-2 inline-flex min-h-11 items-center text-link underline underline-offset-4">View {labs.length === 1 ? "the listed lab" : `all ${labs.length} listed labs`}</Link>
+                        <Link href={`/departments/${department.id}#labs`} className="mt-2 inline-flex min-h-11 items-center text-link underline underline-offset-4">View {labs.length === 1 ? "the listed lab" : `all ${labs.length} listed labs`}
+                          <span className="sr-only"> in {shortDepartmentName(department.name)}</span>
+                        </Link>
                       </div>
                     ) : null}
                   </div>

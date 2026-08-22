@@ -18,7 +18,7 @@ export const contentIssues = [
     "affects": [
       "images"
     ],
-    "description": "132 observed source URLs are an inventory only. Obtain approved local assets and meaningful alt text; do not download or hotlink these URLs.",
+    "description": "The observed source URLs in images.ts are an inventory only. Obtain approved local assets and meaningful alt text; do not download or hotlink these URLs.",
     "sourceUrls": [
       "https://rcet.uet.edu.pk/"
     ]
@@ -51,7 +51,7 @@ export const contentIssues = [
     "affects": [
       "stats"
     ],
-    "description": "No campus statistics section exists on the homepage. Obtain dated, authoritative statistics; the typed stats array is empty.",
+    "description": "No campus statistics section exists on the homepage. Obtain dated, authoritative statistics.",
     "sourceUrls": [
       "https://rcet.uet.edu.pk/"
     ]
@@ -199,6 +199,17 @@ export const contentIssues = [
       "callsToAction"
     ],
     "description": "The current homepage has a footer Admission link and contact information, but no standalone Admissions or Contact CTA sections. Obtain approved section copy.",
+    "sourceUrls": [
+      "https://rcet.uet.edu.pk/"
+    ]
+  },
+  {
+    "id": "peos-repeat-plos",
+    "status": "TODO",
+    "affects": [
+      "departments"
+    ],
+    "description": "Some department PEO pages repeat PLO descriptions word for word (Electrical Engineering's PEO 1-3 are PLO 1-3). The site hides PEOs that only duplicate PLOs; obtain the actual program educational objectives.",
     "sourceUrls": [
       "https://rcet.uet.edu.pk/"
     ]

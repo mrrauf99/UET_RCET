@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { PageSection, PageShell } from "@/components/layout/PageShell";
 import { getDepartments, getFacilities, getImage, getStudentSocieties } from "@/lib/content";
-import { shortDepartmentName } from "@/lib/format";
+import { capitalize, shortDepartmentName } from "@/lib/format";
 import type { Facility, ImageAsset } from "@/types/content";
 
 export const metadata: Metadata = {
@@ -35,7 +35,7 @@ function FacilityGrid({ items, photos }: { items: readonly Facility[]; photos: P
                   className="object-cover"
                 />
               </div>
-              <p className="p-4 font-bold">{item.name.charAt(0).toUpperCase() + item.name.slice(1)}</p>
+              <p className="p-4 font-bold">{capitalize(item.name)}</p>
             </li>
           ))}
         </ul>
@@ -51,7 +51,7 @@ function NameList({ items }: { items: readonly Facility[] }) {
       {items.map((item) => (
         <li key={item.id} className="flex min-h-12 items-center gap-3 border-b border-border py-2">
           <span aria-hidden="true" className="size-2 shrink-0 rotate-45 bg-accent" />
-          {item.name.charAt(0).toUpperCase() + item.name.slice(1)}
+          {capitalize(item.name)}
         </li>
       ))}
     </ul>

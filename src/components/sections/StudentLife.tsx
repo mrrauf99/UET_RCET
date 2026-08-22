@@ -33,7 +33,7 @@ export function StudentLife({ societies, photos }: StudentLifeProps) {
                 key={photo.id}
                 className={cn(
                   "reveal relative aspect-4/3 overflow-hidden rounded-md",
-                  index === 0 ? "col-span-2 aspect-4/3 md:row-span-2"
+                  index === 0 ? "col-span-2 md:row-span-2"
                     : index === 1 ? "md:col-span-2" : undefined,
                 )}
               >

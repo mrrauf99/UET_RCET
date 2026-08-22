@@ -2,6 +2,7 @@ import { Container } from "@/components/ui/Container";
 import { ImageFrame } from "@/components/ui/ImageFrame";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { capitalize } from "@/lib/format";
 import type { Facility, ImageAsset } from "@/types/content";
 
 export interface FacilityGroup {
@@ -45,7 +46,7 @@ export function Facilities({ groups, labCount, image }: FacilitiesProps) {
               <ul className="mt-4 divide-y divide-border border-y border-border">
                 {group.facilities.map((facility) => (
                   <li key={facility.id} className="flex min-h-12 items-center py-2">
-                    {facility.name.charAt(0).toUpperCase() + facility.name.slice(1)}
+                    {capitalize(facility.name)}
                   </li>
                 ))}
               </ul>

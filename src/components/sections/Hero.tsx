@@ -34,9 +34,9 @@ export function Hero({ image }: HeroProps) {
           <ImageFrame
             image={image}
             ratio="16/9"
-            priority
+            preload
             sizes="(min-width: 1024px) 45vw, 100vw"
-            className="lg:aspect-4/3 [clip-path:polygon(0_0,calc(100%_-_3rem)_0,100%_3rem,100%_100%,0_100%)]"
+            className="lg:aspect-4/3 [clip-path:polygon(0_0,calc(100%-3rem)_0,100%_3rem,100%_100%,0_100%)]"
           />
         </div>
       </Container>

@@ -36,7 +36,8 @@ const serverHash = () => "";
 
 /**
  * WAI-ARIA tabs. Every panel is server-rendered and only toggled with `hidden`, so all content
- * stays in the HTML for search engines and find-in-page; the URL hash makes each tab linkable.
+ * stays in the HTML for search engines; the URL hash makes each tab linkable. Find-in-page only
+ * searches the open tab: React 19 renders `hidden` as a boolean, so `hidden="until-found"` is unavailable.
  */
 export function DepartmentTabs({ tabs, label }: { tabs: readonly DepartmentTab[]; label: string }) {
   const hash = useSyncExternalStore(subscribeToHash, readHash, serverHash);

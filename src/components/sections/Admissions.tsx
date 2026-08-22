@@ -1,11 +1,12 @@
 import { Container } from "@/components/ui/Container";
 import { LinkButton } from "@/components/ui/LinkButton";
+import { telHref } from "@/lib/format";
 import { ADMISSIONS_PORTAL_URL } from "@/lib/site";
 import type { UniversityInfo } from "@/types/content";
 
 export function Admissions({ university }: { university: UniversityInfo }) {
   const phone = university.source.status === "observed" ? university.phone : null;
-  const phoneHref = phone ? `tel:+92${phone.replace(/\D/g, "").replace(/^0/, "")}` : null;
+  const phoneHref = phone ? telHref(phone) : null;
 
   return (
     <section id="admissions" aria-labelledby="admissions-title" className="band py-(--space-section)">

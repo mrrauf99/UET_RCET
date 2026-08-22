@@ -11,8 +11,7 @@ function initials(name: string) {
     .join("");
 }
 
-export function FacultyList({ people, headingLevel = 3 }: { people: readonly FacultyMember[]; headingLevel?: 3 | 4 }) {
-  const Heading = headingLevel === 3 ? "h3" : "h4";
+export function FacultyList({ people }: { people: readonly FacultyMember[] }) {
   return (
     <ul className="grid gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
       {people.map((person) => {
@@ -36,7 +35,7 @@ export function FacultyList({ people, headingLevel = 3 }: { people: readonly Fac
               </span>
             )}
             <div className="flex min-w-0 flex-col gap-1">
-              <Heading className="text-lg">{person.name}</Heading>
+              <h3 className="text-lg">{person.name}</h3>
               <p className="text-fg-muted">
                 {person.role ? `${person.role}, ` : ""}
                 {person.designation}

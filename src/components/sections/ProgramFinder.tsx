@@ -5,10 +5,12 @@ import { useId, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
+import { levelLabels } from "@/lib/format";
 import type { Program } from "@/types/content";
 
-export interface ProgramRow {
-  program: Program;
+/** Only the fields the finder shows: rows cross to the client, and source notes are internal. */
+interface ProgramRow {
+  program: Pick<Program, "id" | "name" | "level" | "departmentId" | "duration">;
   departmentName: string;
 }
 
@@ -16,11 +18,6 @@ interface ProgramFinderProps {
   rows: readonly ProgramRow[];
   departments: readonly { id: string; name: string }[];
 }
-
-const levelLabels: Record<Program["level"], string> = {
-  undergraduate: "Undergraduate",
-  postgraduate: "Postgraduate",
-};
 
 const levelOptions = [
   { value: "all", label: "All levels" },
