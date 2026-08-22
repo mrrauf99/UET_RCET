@@ -8,14 +8,16 @@ interface ImageFrameProps {
   sizes: string;
   ratio?: "4/3" | "16/9" | "4/5";
   chamfer?: boolean;
-  priority?: boolean;
+  preload?: boolean;
+  /** Empty alt where adjacent text already names the subject, so it isn't announced twice. */
+  decorative?: boolean;
   className?: string;
 }
 
 const ratios = { "4/3": "aspect-4/3", "16/9": "aspect-video", "4/5": "aspect-4/5" } as const;
 
 /** Approved photo when one exists; otherwise a decorative girih panel (no hotlinked or stock images). */
-export function ImageFrame({ image, sizes, ratio = "4/3", chamfer = false, priority = false, className }: ImageFrameProps) {
+export function ImageFrame({ image, sizes, ratio = "4/3", chamfer = false, preload = false, decorative = false, className }: ImageFrameProps) {
   return (
     <div
       className={cn(
@@ -28,11 +30,11 @@ export function ImageFrame({ image, sizes, ratio = "4/3", chamfer = false, prior
       {image?.approvedLocalPath ? (
         <Image
           src={image.approvedLocalPath}
-          alt={image.approvedAlt ?? ""}
+          alt={decorative ? "" : (image.approvedAlt ?? "")}
           fill
           sizes={sizes}
           quality={90}
-          priority={priority}
+          preload={preload}
           className="object-cover"
         />
       ) : (

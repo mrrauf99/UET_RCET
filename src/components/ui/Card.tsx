@@ -21,7 +21,6 @@ interface CardProps {
   placeholder?: ReactNode;
   ratio?: "4/3" | "16/9";
   children?: ReactNode;
-  className?: string;
 }
 
 const headingTags = { 2: "h2", 3: "h3", 4: "h4" } as const;
@@ -36,7 +35,6 @@ export function Card({
   placeholder,
   ratio = "4/3",
   children,
-  className,
 }: CardProps) {
   const Heading = headingTags[titleLevel];
   const hasMedia = Boolean(media || placeholder);
@@ -46,9 +44,8 @@ export function Card({
       className={cn(
         "reveal group relative flex flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-sm",
         href &&
-          // Lift and deepen the shadow on hover instead of recolouring the border; keyboard focus gets an outline (which, unlike a shadow ring, survives forced-colors mode).
+          // Focus uses an outline because, unlike a shadow ring, it survives forced-colors mode.
           "transition-[translate,box-shadow] duration-(--dur-base) ease-(--ease-emphasized) hover:-translate-y-1 hover:shadow-lg has-focus-visible:outline-3 has-focus-visible:outline-offset-4 has-focus-visible:outline-focus",
-        className,
       )}
     >
       {hasMedia ? (

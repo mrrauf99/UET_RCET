@@ -19,12 +19,11 @@ export type IconName = keyof typeof paths;
 
 interface IconProps {
   name: IconName;
-  /** Gives the icon an accessible name; omit for decorative icons. */
-  title?: string;
   className?: string;
 }
 
-export function Icon({ name, title, className = "size-5" }: IconProps) {
+/** Decorative: pair it with visible text or an accessible name on its parent. */
+export function Icon({ name, className = "size-5" }: IconProps) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -34,11 +33,9 @@ export function Icon({ name, title, className = "size-5" }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={`shrink-0 ${className}`}
-      aria-hidden={title ? undefined : true}
-      role={title ? "img" : undefined}
+      aria-hidden="true"
       focusable="false"
     >
-      {title ? <title>{title}</title> : null}
       <path d={paths[name]} />
     </svg>
   );

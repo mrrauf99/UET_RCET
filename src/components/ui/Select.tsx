@@ -1,6 +1,6 @@
 import { Icon } from "@/components/ui/Icon";
 
-export interface SelectOption {
+interface SelectOption {
   value: string;
   label: string;
 }
@@ -31,6 +31,8 @@ export function Select({ id, value, options, onValueChange }: SelectProps) {
           </option>
         ))}
       </select>
+      {/* Fades a long selected label out under the chevron; a customizable select's label can't take an ellipsis. */}
+      <span aria-hidden="true" className="pointer-events-none absolute inset-y-0.5 end-0.5 w-14 rounded-e-md bg-linear-to-r from-transparent via-surface via-40% to-surface" />
       <Icon
         name="chevron-down"
         className="rcet-select-icon pointer-events-none absolute end-3 top-1/2 size-5 -translate-y-1/2 text-fg-muted"

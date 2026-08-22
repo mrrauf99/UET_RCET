@@ -1,42 +1,17 @@
 import type { ButtonHTMLAttributes } from "react";
 import { Icon, type IconName } from "./Icon";
-import { buttonClasses, type ButtonSize, type ButtonVariant } from "./button-styles";
+import { buttonClasses, type ButtonVariant } from "./button-styles";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
-  size?: ButtonSize;
   icon?: IconName;
-  iconPosition?: "start" | "end";
-  loading?: boolean;
 }
 
-export function Button({
-  variant = "primary",
-  size = "md",
-  icon,
-  iconPosition = "start",
-  loading = false,
-  className,
-  children,
-  type = "button",
-  onClick,
-  ...props
-}: ButtonProps) {
-  const disabled = props["aria-disabled"] === true || props["aria-disabled"] === "true" || loading;
-  const iconNode = icon ? <Icon name={icon} /> : null;
-
+export function Button({ variant = "primary", icon, className, children, type = "button", ...props }: ButtonProps) {
   return (
-    <button
-      {...props}
-      type={type}
-      className={buttonClasses(variant, size, className)}
-      aria-busy={loading || undefined}
-      // aria-disabled instead of disabled keeps the button focusable so its state stays discoverable.
-      onClick={disabled ? (event) => event.preventDefault() : onClick}
-    >
-      {iconPosition === "start" ? iconNode : null}
+    <button {...props} type={type} className={buttonClasses(variant, "md", className)}>
+      {icon ? <Icon name={icon} /> : null}
       {children}
-      {iconPosition === "end" ? iconNode : null}
     </button>
   );
 }

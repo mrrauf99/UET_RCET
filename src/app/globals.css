@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 /* Text scaled to 150%+ no longer fits the desktop navigation, so it switches to the menu dialog. */
 @custom-variant large-text (&:where([data-text-scale="150"] *, [data-text-scale="175"] *, [data-text-scale="200"] *));
 
@@ -13,6 +12,7 @@
   --color-border: var(--rcet-border);
   --color-border-strong: var(--rcet-border-strong);
   --color-band: var(--rcet-band);
+  --color-banner: var(--rcet-banner);
   --color-on-band: var(--rcet-on-band);
   --color-on-band-muted: var(--rcet-on-band-muted);
   --color-accent: var(--rcet-accent);
@@ -76,6 +76,8 @@
   --rcet-border: #c9d3e3;
   --rcet-border-strong: #7a879f;
   --rcet-band: #0a1f55;
+  /* Brighter navy for page headers; grayscale, contrast and preset modes fold it back into the band. */
+  --rcet-banner: #0b2f7a;
   --rcet-on-band: #ffffff;
   --rcet-on-band-muted: #b4cce4;
   --rcet-accent: #b3261e;
@@ -135,6 +137,7 @@
 
 /* Grayscale remaps tokens instead of filtering <html>, which would break position: fixed. */
 :root[data-grayscale="true"] {
+  --rcet-banner: var(--rcet-band);
   --rcet-bg: #fcfcfc;
   --rcet-surface: #ffffff;
   --rcet-muted: #efefef;
@@ -186,6 +189,7 @@
 
 /* High contrast is declared after grayscale so it wins when both are on. */
 :root[data-contrast="more"] {
+  --rcet-banner: var(--rcet-band);
   --rcet-bg: #ffffff;
   --rcet-surface: #ffffff;
   --rcet-muted: #ffffff;
@@ -265,6 +269,7 @@
   --rcet-border: var(--p-fg);
   --rcet-border-strong: var(--p-fg);
   --rcet-band: var(--p-bg);
+  --rcet-banner: var(--p-bg);
   --rcet-on-band: var(--p-fg);
   --rcet-on-band-muted: var(--p-fg);
   --rcet-accent: var(--p-fg);
@@ -390,7 +395,7 @@
   }
 
   :root[data-contrast="more"] :is([data-girih], [data-banner-photo]),
-  :root[data-color-preset] [data-banner-photo] {
+  :root:is([data-color-preset], [data-images="hidden"]) [data-banner-photo] {
     display: none;
   }
 
@@ -436,12 +441,12 @@
 }
 
 /* Spacing overrides follow WCAG 1.4.12 text-spacing values; the toolbar keeps its own metrics. */
-:root[data-line-height="1.8"] body :not(.a11y-toolbar *) { line-height: 1.8 !important; }
-:root[data-line-height="2.2"] body :not(.a11y-toolbar *) { line-height: 2.2 !important; }
-:root[data-line-height="2.6"] body :not(.a11y-toolbar *) { line-height: 2.6 !important; }
-:root[data-letter-spacing="0.06"] body :not(.a11y-toolbar *) { letter-spacing: 0.06em !important; word-spacing: 0.08em; }
-:root[data-letter-spacing="0.12"] body :not(.a11y-toolbar *) { letter-spacing: 0.12em !important; word-spacing: 0.16em; }
-:root[data-letter-spacing="0.2"] body :not(.a11y-toolbar *) { letter-spacing: 0.2em !important; word-spacing: 0.24em; }
+:root[data-line-height="1.8"] body :not(.a11y-toolbar, .a11y-toolbar *) { line-height: 1.8 !important; }
+:root[data-line-height="2.2"] body :not(.a11y-toolbar, .a11y-toolbar *) { line-height: 2.2 !important; }
+:root[data-line-height="2.6"] body :not(.a11y-toolbar, .a11y-toolbar *) { line-height: 2.6 !important; }
+:root[data-letter-spacing="0.06"] body :not(.a11y-toolbar, .a11y-toolbar *) { letter-spacing: 0.06em !important; word-spacing: 0.08em; }
+:root[data-letter-spacing="0.12"] body :not(.a11y-toolbar, .a11y-toolbar *) { letter-spacing: 0.12em !important; word-spacing: 0.16em; }
+:root[data-letter-spacing="0.2"] body :not(.a11y-toolbar, .a11y-toolbar *) { letter-spacing: 0.2em !important; word-spacing: 0.24em; }
 
 :root[data-links="highlight"] a:not(:focus-visible) {
   text-decoration-line: underline;
@@ -478,10 +483,7 @@
   background-color: color-mix(in srgb, var(--rcet-accent) 12%, transparent);
 }
 
-/*
- * Motion. Every entrance starts from the visible end state when motion is reduced or unsupported,
- * so content never depends on an animation finishing.
- */
+/* Entrances start from the visible end state, so content never depends on an animation finishing. */
 @keyframes girih-draw {
   from {
     clip-path: inset(0 100% 0 0);
@@ -519,7 +521,7 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  /* The hero is the page's one authored moment: the photo is "constructed" left to right, like the seam below it. */
+  /* The hero photo wipes in left to right, matching the seam below it. */
   :root:not([data-motion="reduce"]) .girih-draw {
     animation: girih-draw 900ms var(--ease-out) 150ms both;
   }
@@ -659,13 +661,19 @@
 
 /* Customizable select (progressive enhancement): the open list matches the site instead of the OS default. */
 @supports (appearance: base-select) {
-  .rcet-select,
-  .rcet-select::picker(select) {
+  /* At 150%+ text the field is too narrow for a styled list, so the OS picker (full-screen on phones) takes over. */
+  :root:not([data-text-scale="150"], [data-text-scale="175"], [data-text-scale="200"]) .rcet-select,
+  :root:not([data-text-scale="150"], [data-text-scale="175"], [data-text-scale="200"]) .rcet-select::picker(select) {
     appearance: base-select;
   }
+  /* Block (not flex) keeps a long selected label on one line, clipped (and faded out by the component)
+     instead of widening the field; line-height centres it. */
   .rcet-select {
-    display: flex;
-    align-items: center;
+    display: block;
+    line-height: calc(2.75rem - 4px);
+    min-inline-size: 0;
+    overflow: hidden;
+    white-space: nowrap;
   }
   /* Keep the site's chevron instead of the browser's arrow, and flip it while the list is open. */
   .rcet-select::picker-icon {
@@ -681,9 +689,13 @@
     border-color: var(--rcet-fg);
   }
   .rcet-select::picker(select) {
+    /* Exactly the field's width on every screen, so long options wrap instead of spilling past the card. */
+    inline-size: anchor-size(self-inline);
+    position-area: block-end span-inline-end;
     /* Open on whichever side has more room, so the list never collapses to a sliver. */
+    position-try-fallbacks: flip-block;
     position-try-order: most-block-size;
-    max-block-size: 20rem;
+    max-block-size: min(20rem, 60dvh);
     margin-block: 6px;
     padding: 0.375rem;
     border: 1px solid var(--rcet-border-strong);
@@ -693,8 +705,12 @@
     box-shadow: var(--shadow-lg);
   }
   .rcet-select option {
+    gap: 0.75rem;
     min-height: 2.75rem;
     padding: 0.5rem 0.75rem;
+    /* Options would otherwise inherit the field's tall centring line-height when they wrap. */
+    line-height: 1.4;
+    white-space: normal;
     border-radius: var(--radius-md);
   }
   .rcet-select option:is(:hover, :focus-visible) {

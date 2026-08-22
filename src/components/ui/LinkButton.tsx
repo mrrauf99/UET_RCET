@@ -5,7 +5,7 @@ import { buttonClasses, type ButtonSize, type ButtonVariant } from "./button-sty
 
 type LinkButtonProps = Omit<ComponentProps<typeof Link>, "href"> & {
   href: string;
-  variant?: Exclude<ButtonVariant, "icon">;
+  variant?: ButtonVariant;
   size?: ButtonSize;
   icon?: IconName;
   external?: boolean;
