@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Container } from "@/components/ui/Container";
 import { Icon } from "@/components/ui/Icon";
+import { telHref } from "@/lib/format";
 import { ADMISSIONS_PORTAL_URL } from "@/lib/site";
 import type { NavItem, UniversityInfo } from "@/types/content";
 import { MainNav } from "./MainNav";
@@ -15,7 +16,7 @@ interface SiteHeaderProps {
 }
 
 export function SiteHeader({ navigation, university, utilityActions }: SiteHeaderProps) {
-  const phoneHref = `tel:+92${university.phone.replace(/\D/g, "").replace(/^0/, "")}`;
+  const phoneHref = telHref(university.phone);
   const utilityLinks = [
     { label: `Call ${university.phone}`, href: phoneHref, external: false },
     { label: university.email, href: `mailto:${university.email}`, external: false },

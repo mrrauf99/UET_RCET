@@ -5,15 +5,12 @@ import { usePathname } from "next/navigation";
 import { useId, useRef, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { cn } from "@/lib/cn";
+import { isCurrentPath } from "@/lib/nav";
 import type { ContentLink, NavItem } from "@/types/content";
 
 interface MobileNavProps {
   items: readonly NavItem[];
   utilityLinks: readonly ContentLink[];
-}
-
-function isCurrent(pathname: string, href: string) {
-  return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 export function MobileNav({ items, utilityLinks }: MobileNavProps) {
@@ -85,7 +82,7 @@ export function MobileNav({ items, utilityLinks }: MobileNavProps) {
                     href={item.href}
                     onClick={closeMenu}
                     className="flex min-h-14 items-center rounded-sm px-3 text-lg font-bold transition-[color,background-color] duration-(--dur-fast) hover:bg-muted hover:text-accent focus-visible:bg-muted focus-visible:text-accent aria-[current=page]:bg-muted aria-[current=page]:text-accent"
-                    aria-current={isCurrent(pathname, item.href) ? "page" : undefined}
+                    aria-current={isCurrentPath(pathname, item.href) ? "page" : undefined}
                   >
                     {item.label}
                   </Link>
@@ -113,7 +110,7 @@ export function MobileNav({ items, utilityLinks }: MobileNavProps) {
                             href={child.href}
                             onClick={closeMenu}
                             className="flex min-h-11 items-center rounded-sm px-3 ps-7 text-base transition-[color,background-color] duration-(--dur-fast) hover:bg-muted hover:text-accent focus-visible:bg-muted focus-visible:text-accent aria-[current=page]:bg-muted aria-[current=page]:font-bold aria-[current=page]:text-accent"
-                            aria-current={isCurrent(pathname, child.href) ? "page" : undefined}
+                            aria-current={isCurrentPath(pathname, child.href) ? "page" : undefined}
                           >
                             {child.label}
                           </Link>

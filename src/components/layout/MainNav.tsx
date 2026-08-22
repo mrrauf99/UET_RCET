@@ -5,14 +5,11 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { cn } from "@/lib/cn";
+import { isCurrentPath } from "@/lib/nav";
 import type { NavItem } from "@/types/content";
 
 interface MainNavProps {
   items: readonly NavItem[];
-}
-
-function isCurrent(pathname: string, href: string) {
-  return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 }
 
 const itemClasses =
@@ -66,7 +63,7 @@ export function MainNav({ items }: MainNavProps) {
               <Link
                 href={item.href}
                 className={itemClasses}
-                aria-current={isCurrent(pathname, item.href) ? "page" : undefined}
+                aria-current={isCurrentPath(pathname, item.href) ? "page" : undefined}
               >
                 {item.label}
               </Link>
@@ -100,7 +97,7 @@ export function MainNav({ items }: MainNavProps) {
                       <Link
                         href={child.href}
                         className="flex min-h-11 items-center rounded-sm px-3 py-2 text-sm transition-colors duration-(--dur-fast) hover:bg-band hover:text-on-band aria-[current=page]:font-bold"
-                        aria-current={isCurrent(pathname, child.href) ? "page" : undefined}
+                        aria-current={isCurrentPath(pathname, child.href) ? "page" : undefined}
                       >
                         {child.label}
                       </Link>

@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { Icon } from "@/components/ui/Icon";
+import { telHref } from "@/lib/format";
 import type { ContentLink, FooterContent, UniversityInfo } from "@/types/content";
 import { GirihPattern } from "./GirihPattern";
 
@@ -43,7 +44,7 @@ function FooterLinkList({ links }: { links: readonly ContentLink[] }) {
 }
 
 export function SiteFooter({ footer, university, exploreLinks, campusLinks }: SiteFooterProps) {
-  const phoneHref = `tel:+92${university.phone.replace(/\D/g, "").replace(/^0/, "")}`;
+  const phoneHref = telHref(university.phone);
 
   return (
     <footer className="band relative overflow-hidden">
