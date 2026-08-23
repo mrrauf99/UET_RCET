@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-// In-house icons drawn on a 24px grid; none are taken from the reference site or its vendor.
+// In-house icons on a 24px grid.
 const icons = {
   speak: (
     <>

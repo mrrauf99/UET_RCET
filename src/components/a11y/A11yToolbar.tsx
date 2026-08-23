@@ -6,7 +6,6 @@ import { FocusSound, type FocusSoundMode } from "@/lib/a11y/focus-sound";
 import { TEXT_SCALES } from "@/lib/a11y/prefs";
 import { isSpeechSupported, useTextToSpeech } from "@/lib/a11y/speech";
 import { closeToolbar, resetPrefs, updatePrefs, useA11yState } from "@/lib/a11y/store";
-import { resumeTranslation } from "@/lib/a11y/translate";
 import { isVoiceControlSupported, startVoiceControl } from "@/lib/a11y/voice-control";
 import { ToolbarIcon, type ToolbarIconName } from "./ToolbarIcon";
 import {
@@ -56,6 +55,8 @@ interface ToolButtonProps {
   icon?: ToolbarIconName;
   text?: string;
   pressed?: boolean;
+  /** Visual on-state for panel tools, which are disclosures and so cannot also be toggle buttons. */
+  active?: boolean;
   expanded?: boolean;
   controls?: string;
   disabled?: boolean;
@@ -65,8 +66,8 @@ interface ToolButtonProps {
   buttonRef?: (element: HTMLButtonElement | null) => void;
 }
 
-function ToolButton({ label, color, icon, text, pressed, expanded, controls, disabled, onClick, onFocus, tabIndex, buttonRef }: ToolButtonProps) {
-  const active = pressed || expanded;
+function ToolButton({ label, color, icon, text, pressed, active, expanded, controls, disabled, onClick, onFocus, tabIndex, buttonRef }: ToolButtonProps) {
+  const highlighted = pressed || active || expanded;
   return (
     <button
       ref={buttonRef}
@@ -85,7 +86,7 @@ function ToolButton({ label, color, icon, text, pressed, expanded, controls, dis
       className={cn(
         "relative grid size-11 shrink-0 place-items-center rounded-md text-(--tool-icon) transition-transform duration-(--dur-fast) hover:-translate-y-0.5 aria-disabled:opacity-55 lg:size-14",
         // Active tools carry an underline bar, so state is visible without relying on colour alone.
-        active && "after:absolute after:inset-x-1 after:-bottom-1.5 after:h-1 lg:after:-bottom-2 after:rounded-full after:bg-(--tb-accent)",
+        highlighted && "after:absolute after:inset-x-1 after:-bottom-1.5 after:h-1 lg:after:-bottom-2 after:rounded-full after:bg-(--tb-accent)",
       )}
     >
       {icon ? <ToolbarIcon name={icon} className="size-6 lg:size-8" /> : null}
@@ -109,7 +110,7 @@ function PlayerButton({ label, icon, onClick }: { label: string; icon: ToolbarIc
 }
 
 export function A11yToolbar() {
-  const { prefs, toolbarOpen } = useA11yState();
+  const { prefs } = useA11yState();
   const [panel, setPanel] = useState<PanelId | null>(null);
   const [panelLeft, setPanelLeft] = useState(0);
   const [focusIndex, setFocusIndex] = useState(0);
@@ -126,10 +127,11 @@ export function A11yToolbar() {
   const [playerOffset, setPlayerOffset] = useState({ x: 0, y: 0 });
   const playerRef = useRef<HTMLFieldSetElement>(null);
   const playerDrag = useRef<{ pointerX: number; pointerY: number; offset: { x: number; y: number }; rect: DOMRect } | null>(null);
+  const playerDragged = useRef(false);
 
   const barRef = useRef<HTMLElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLElement>(null);
+  const tipRef = useRef<HTMLDivElement>(null);
   const panelButtons = useRef(new Map<PanelId, HTMLButtonElement>());
   const sound = useRef<FocusSound | null>(null);
   const stopVoice = useRef<(() => void) | null>(null);
@@ -139,8 +141,6 @@ export function A11yToolbar() {
 
   // The toolbar only renders in the browser (it is closed during server rendering), so capabilities can be read directly.
   const support = { speech: isSpeechSupported(), voice: isVoiceControlSupported() };
-
-  useEffect(() => resumeTranslation(), []);
 
   // Opening the toolbar moves focus to the first tool; browsers may still flag that as :focus-visible
   // after a mouse or touch open, so focus labels follow the last real input instead.
@@ -156,14 +156,13 @@ export function A11yToolbar() {
   }, []);
 
   useEffect(() => {
-    if (!toolbarOpen) return;
     toolbarRef.current?.querySelector<HTMLButtonElement>("[data-tool]")?.focus();
-  }, [toolbarOpen]);
+  }, []);
 
   // Tools wrap onto more rows on narrow screens, so the page offset follows the bar's real height.
   useEffect(() => {
     const bar = barRef.current;
-    if (!toolbarOpen || !bar) return;
+    if (!bar) return;
     const root = document.documentElement;
     const observer = new ResizeObserver(() => root.style.setProperty("--toolbar-offset", `${bar.offsetHeight}px`));
     observer.observe(bar);
@@ -171,7 +170,7 @@ export function A11yToolbar() {
       observer.disconnect();
       root.style.removeProperty("--toolbar-offset");
     };
-  }, [toolbarOpen]);
+  }, []);
 
   const closePanel = () => {
     const id = panel;
@@ -196,9 +195,21 @@ export function A11yToolbar() {
     };
   }, [panel]);
 
+  const tipShown = tip !== null;
+  useEffect(() => {
+    if (!tipShown) return;
+    // Captured first so Escape only hides the label, without also closing a panel (WCAG 1.4.13).
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      setTip(null);
+    };
+    document.addEventListener("keydown", onKeyDown, true);
+    return () => document.removeEventListener("keydown", onKeyDown, true);
+  }, [tipShown]);
+
   const readFrom = useEffectEvent((target: Element) => tts.readFrom(target));
 
-  // In read-aloud mode, selecting a paragraph starts reading from it.
   useEffect(() => {
     if (!ttsOn) return;
     const main = document.getElementById("main");
@@ -211,8 +222,6 @@ export function A11yToolbar() {
     return () => main?.removeEventListener("click", onClick);
   }, [ttsOn]);
 
-  if (!toolbarOpen) return null;
-
   // One tooltip rendered outside the scrolling row, which would otherwise clip it.
   const showTip = (target: EventTarget, keyboard = false) => {
     const button = (target as Element).closest<HTMLElement>("[data-label]");
@@ -220,27 +229,34 @@ export function A11yToolbar() {
     const rect = button.getBoundingClientRect();
     // Controls in the lower half (the floating player) label upwards so the tip stays on screen.
     const above = rect.top > innerHeight / 2;
-    // Clamped so labels on edge buttons don't run off screen.
     const x = Math.min(Math.max(rect.left + rect.width / 2, 72), innerWidth - 72);
     setTip({ label: button.dataset.label ?? "", x, y: above ? rect.top - 8 : rect.bottom + 8, above });
   };
   const tipHandlers = {
     onPointerOver: (event: { target: EventTarget }) => showTip(event.target),
-    onPointerLeave: () => setTip(null),
+    onPointerLeave: (event: { relatedTarget: EventTarget | null }) => {
+      if (!tipRef.current?.contains(event.relatedTarget as Node | null)) setTip(null);
+    },
     onFocus: (event: { target: EventTarget }) => showTip(event.target, true),
     onBlur: () => setTip(null),
     onClick: () => setTip(null),
   };
 
-  const announce = (text: string) => setMessage(text);
+  // Clearing first makes a repeated message ("Line spacing increased" twice) a real DOM change, so it is spoken again.
+  const announce = (text: string) => {
+    setMessage("");
+    requestAnimationFrame(() => setMessage(text));
+  };
 
   const togglePanel = (id: PanelId) => {
     const button = panelButtons.current.get(id);
     const bar = barRef.current?.getBoundingClientRect();
     if (button && bar) {
       const left = button.getBoundingClientRect().left - bar.left;
-      // Keep a 320px panel inside the viewport.
-      setPanelLeft(Math.max(8, Math.min(left, bar.width - 336)));
+      // The panel is min(20rem, 100vw - 1rem) wide and rem grows with the text-size setting.
+      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+      const width = Math.min(20 * rem, innerWidth - rem);
+      setPanelLeft(Math.max(8, Math.min(left, bar.width - width - 8)));
     }
     setPanel((current) => (current === id ? null : id));
   };
@@ -269,7 +285,11 @@ export function A11yToolbar() {
 
   const toggleVoice = (on: boolean) => {
     if (on) {
-      stopVoice.current = startVoiceControl(setVoiceStatus, () => setListening(false));
+      const update = (status: string) => {
+        setVoiceStatus(status);
+        announce(status);
+      };
+      stopVoice.current = startVoiceControl(update, () => setListening(false));
       setListening(stopVoice.current !== null);
     } else {
       stopVoice.current?.();
@@ -290,7 +310,6 @@ export function A11yToolbar() {
     closeToolbar();
   };
 
-  // Moves the player by a delta from a starting offset, keeping it fully on screen.
   const movePlayer = (from: { x: number; y: number }, rect: DOMRect, dx: number, dy: number) => {
     const margin = 8;
     const x = Math.min(Math.max(dx, margin - rect.left), innerWidth - margin - rect.right);
@@ -304,15 +323,32 @@ export function A11yToolbar() {
       if (!rect) return;
       event.currentTarget.setPointerCapture(event.pointerId);
       playerDrag.current = { pointerX: event.clientX, pointerY: event.clientY, offset: playerOffset, rect };
+      playerDragged.current = false;
       setTip(null);
     },
     onPointerMove: (event: ReactPointerEvent<HTMLButtonElement>) => {
       const drag = playerDrag.current;
-      if (drag) movePlayer(drag.offset, drag.rect, event.clientX - drag.pointerX, event.clientY - drag.pointerY);
+      if (!drag) return;
+      const dx = event.clientX - drag.pointerX;
+      const dy = event.clientY - drag.pointerY;
+      if (Math.hypot(dx, dy) > 4) playerDragged.current = true;
+      movePlayer(drag.offset, drag.rect, dx, dy);
     },
     onPointerUp: () => (playerDrag.current = null),
     onPointerCancel: () => (playerDrag.current = null),
-    // Arrow keys are the non-dragging alternative (WCAG 2.5.7); Shift moves further.
+    onLostPointerCapture: () => (playerDrag.current = null),
+    // A tap (or Enter/Space) is the single-pointer alternative to dragging (WCAG 2.5.7): it swaps top and bottom.
+    onClick: () => {
+      if (playerDragged.current) {
+        playerDragged.current = false;
+        return;
+      }
+      const rect = playerRef.current?.getBoundingClientRect();
+      const bar = barRef.current?.getBoundingClientRect();
+      if (!rect || !bar) return;
+      if (playerOffset.y < 0) setPlayerOffset({ x: 0, y: 0 });
+      else movePlayer(playerOffset, rect, 0, bar.bottom + 8 - rect.top);
+    },
     onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => {
       const step = event.shiftKey ? 80 : 24;
       const delta = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[event.key];
@@ -418,8 +454,8 @@ export function A11yToolbar() {
             onClick={() => support.speech && toggleTts()}
             {...rove()}
           />
-          <ToolButton label="Focus audio" icon="music" color="--tool-listen" pressed={focusSound.playing || undefined} {...panelTool("audio")} {...rove()} />
-          <ToolButton label="Voice control" icon="mic" color="--tool-listen" pressed={listening || undefined} {...panelTool("voice")} {...rove()} />
+          <ToolButton label={focusSound.playing ? "Focus audio (on)" : "Focus audio"} icon="music" color="--tool-listen" active={focusSound.playing} {...panelTool("audio")} {...rove()} />
+          <ToolButton label={listening ? "Voice control (on)" : "Voice control"} icon="mic" color="--tool-listen" active={listening} {...panelTool("voice")} {...rove()} />
 
           <ToolButton
             label="Decrease text size"
@@ -431,7 +467,7 @@ export function A11yToolbar() {
           />
           <ToolButton label="Font options" text="Aa" color="--tool-text" {...panelTool("font")} {...rove()} />
           <ToolButton
-            label="Focus text"
+            label="Focus text (FT)"
             text="FT"
             color="--tool-text"
             pressed={prefs.focusText}
@@ -452,9 +488,9 @@ export function A11yToolbar() {
 
           <ToolButton label="Translation" icon="translate" color="--tool-language" {...panelTool("translate")} {...rove()} />
           <ToolButton label="Colour theme" icon="palette" color="--tool-colour" {...panelTool("colour")} {...rove()} />
-          <ToolButton label="Ruler options" icon="ruler" color="--tool-ruler" pressed={prefs.readingGuide || undefined} {...panelTool("ruler")} {...rove()} />
+          <ToolButton label={prefs.readingGuide ? "Ruler options (on)" : "Ruler options"} icon="ruler" color="--tool-ruler" active={prefs.readingGuide} {...panelTool("ruler")} {...rove()} />
           <ToolButton label="Cursor options" icon="cursor" color="--tool-cursor" {...panelTool("cursor")} {...rove()} />
-          <ToolButton label="Screen mask" icon="mask" color="--tool-mask" pressed={prefs.readingMask || undefined} {...panelTool("mask")} {...rove()} />
+          <ToolButton label={prefs.readingMask ? "Screen mask (on)" : "Screen mask"} icon="mask" color="--tool-mask" active={prefs.readingMask} {...panelTool("mask")} {...rove()} />
           <ToolButton label="Page options" icon="options" color="--tool-page" {...panelTool("page")} {...rove()} />
           <ToolButton label="Page structure" icon="structure" color="--tool-page" {...panelTool("structure")} {...rove()} />
 
@@ -470,6 +506,31 @@ export function A11yToolbar() {
             {...rove()}
           />
         </div>
+
+        {/* Rendered straight after the tools so Tab moves from the open tool into its panel. */}
+        {panel ? (
+          <section
+            id={panelId}
+            aria-labelledby={`${panelId}-title`}
+            style={{ left: panelLeft }}
+            className="pop-in absolute top-full mt-1 flex max-h-[calc(100dvh-var(--toolbar-offset)-1rem)] w-[min(20rem,calc(100vw-1rem))] flex-col gap-5 overflow-y-auto rounded-lg border-2 border-(--tb-border) bg-(--tb-bg) p-5 shadow-lg max-sm:!left-2"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <h2 id={`${panelId}-title`} className="text-xl">
+                {PANEL_TITLES[panel]}
+              </h2>
+              <button
+                type="button"
+                aria-label={`Close ${PANEL_TITLES[panel]}`}
+                onClick={closePanel}
+                className="grid size-11 place-items-center rounded-sm hover:bg-(--tb-hover)"
+              >
+                <ToolbarIcon name="close" className="size-5" />
+              </button>
+            </div>
+            {panels[panel]}
+          </section>
+        ) : null}
 
         <div className="flex shrink-0 items-center gap-2">
           <button
@@ -498,31 +559,6 @@ export function A11yToolbar() {
         </div>
       </div>
 
-      {panel ? (
-        <section
-          ref={panelRef}
-          id={panelId}
-          aria-labelledby={`${panelId}-title`}
-          style={{ left: panelLeft }}
-          className="pop-in absolute top-full mt-1 flex max-h-[calc(100dvh-var(--toolbar-offset)-1rem)] w-[min(20rem,calc(100vw-1rem))] flex-col gap-5 overflow-y-auto rounded-lg border-2 border-(--tb-border) bg-(--tb-bg) p-5 shadow-lg max-sm:!left-2"
-        >
-          <div className="flex items-center justify-between gap-3">
-            <h2 id={`${panelId}-title`} className="text-xl">
-              {PANEL_TITLES[panel]}
-            </h2>
-            <button
-              type="button"
-              aria-label={`Close ${PANEL_TITLES[panel]}`}
-              onClick={closePanel}
-              className="grid size-11 place-items-center rounded-sm hover:bg-(--tb-hover)"
-            >
-              <ToolbarIcon name="close" className="size-5" />
-            </button>
-          </div>
-          {panels[panel]}
-        </section>
-      ) : null}
-
       {ttsOn ? (
         // Floats over the page so the toolbar layout never shifts when reading starts.
         <fieldset
@@ -530,15 +566,16 @@ export function A11yToolbar() {
           {...tipHandlers}
           // transform (not translate) so it composes with the centring translate utility.
           style={{ transform: `translate(${playerOffset.x}px, ${playerOffset.y}px)` }}
-          className="rise-in fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] left-3 flex items-center gap-0.5 rounded-full border-2 border-(--tb-border) bg-(--tb-bg) p-1 shadow-lg sm:bottom-[calc(1rem+env(safe-area-inset-bottom))] sm:left-1/2 sm:-translate-x-1/2"
+          // Wraps to two rows on the narrowest phones (and at large text) rather than running off screen.
+          className="rise-in fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] left-3 flex max-w-[calc(100vw-1.5rem)] flex-wrap items-center justify-center gap-0.5 rounded-[1.75rem] border-2 border-(--tb-border) bg-(--tb-bg) p-1 shadow-lg sm:bottom-[calc(1rem+env(safe-area-inset-bottom))] sm:left-1/2 sm:-translate-x-1/2"
         >
           <legend className="sr-only">Read aloud controls</legend>
           <button
             type="button"
-            aria-label="Move reading controls (arrow keys)"
-            data-label="Drag to move"
+            aria-label="Move reading controls to the top or bottom (arrow keys also move them)"
+            data-label="Drag or tap to move"
             {...gripHandlers}
-            className="grid h-11 w-7 cursor-grab touch-none place-items-center rounded-full text-(--tb-muted) hover:bg-(--tb-hover) active:cursor-grabbing"
+            className="grid size-11 cursor-grab touch-none place-items-center rounded-full text-(--tb-muted) hover:bg-(--tb-hover) active:cursor-grabbing"
           >
             <ToolbarIcon name="grip" className="size-5" />
           </button>
@@ -555,7 +592,7 @@ export function A11yToolbar() {
           </button>
           <PlayerButton label="Next sentence" icon="forward" onClick={tts.nextSentence} />
           <PlayerButton label="Next paragraph" icon="skip-forward" onClick={tts.nextBlock} />
-          <span aria-hidden="true" className="mx-0.5 h-6 w-px bg-(--tb-border)" />
+          <span aria-hidden="true" className="mx-0.5 h-6 w-px bg-(--tb-border) max-sm:hidden" />
           <PlayerButton label="Turn off read aloud" icon="close" onClick={toggleTts} />
         </fieldset>
       ) : null}
@@ -563,11 +600,14 @@ export function A11yToolbar() {
       {tip ? (
         // Visual only: every control already has the same text as its accessible name.
         <div
+          ref={tipRef}
           aria-hidden="true"
           style={{ left: tip.x, top: tip.y }}
+          onPointerLeave={() => setTip(null)}
           className={cn(
-            "a11y-tip pointer-events-none fixed z-10 -translate-x-1/2 rounded-md bg-(--tb-fg) px-2.5 py-1.5 text-sm font-bold whitespace-nowrap text-(--tb-bg) shadow-md",
-            tip.above && "-translate-y-full",
+            // The ::before strip bridges the gap to the control so the pointer can move onto the label.
+            "a11y-tip fixed z-10 -translate-x-1/2 rounded-md bg-(--tb-fg) px-2.5 py-1.5 text-sm font-bold whitespace-nowrap text-(--tb-bg) shadow-md before:absolute before:inset-x-0 before:h-2",
+            tip.above ? "-translate-y-full before:-bottom-2" : "before:-top-2",
           )}
         >
           {tip.label}

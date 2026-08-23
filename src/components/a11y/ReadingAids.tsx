@@ -1,18 +1,17 @@
 "use client";
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { RULER_SWATCHES } from "@/lib/a11y/prefs";
 import { useA11yState } from "@/lib/a11y/store";
 
 const KEYBOARD_STEP_EM = 1.5;
-const RULER_COLOURS = { red: "#b3261e", blue: "#1d4fa8", yellow: "#f5c451", green: "#1b6e3c", black: "#000000" } as const;
 const TEXT_BLOCKS = "p, li, h1, h2, h3, h4, a, button, label, td, th, dt, dd, blockquote, figcaption";
 
 /** Tracks the reading line from pointer, keyboard focus (through smooth scrolling) and Alt+Arrow keys. */
-function useReadingLine(enabled: boolean, onMove: (y: number) => void) {
+function useReadingLine(onMove: (y: number) => void) {
   const move = useEffectEvent(onMove);
 
   useEffect(() => {
-    if (!enabled) return;
     let y = window.innerHeight / 2;
     let frame = 0;
     let focusTarget: Element | null = null;
@@ -44,6 +43,8 @@ function useReadingLine(enabled: boolean, onMove: (y: number) => void) {
     };
     const onKeyDown = (event: KeyboardEvent) => {
       if (!event.altKey || (event.key !== "ArrowUp" && event.key !== "ArrowDown")) return;
+      // Alt+Arrow opens native selects, so leave it to them.
+      if ((event.target as Element).closest?.("select")) return;
       event.preventDefault();
       focusTarget = null;
       const step = parseFloat(getComputedStyle(document.documentElement).fontSize) * KEYBOARD_STEP_EM;
@@ -63,12 +64,12 @@ function useReadingLine(enabled: boolean, onMove: (y: number) => void) {
       document.removeEventListener("focusin", onFocusIn);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [enabled]);
+  }, []);
 }
 
 function ReadingRuler({ color, size }: { color: string; size: number }) {
   const ref = useRef<HTMLDivElement>(null);
-  useReadingLine(true, (y) => {
+  useReadingLine((y) => {
     if (ref.current) ref.current.style.transform = `translateY(${y + 12}px)`;
   });
   return (
@@ -83,7 +84,7 @@ function ReadingRuler({ color, size }: { color: string; size: number }) {
 
 function ScreenMask({ size }: { size: number }) {
   const ref = useRef<HTMLDivElement>(null);
-  useReadingLine(true, (y) => {
+  useReadingLine((y) => {
     if (ref.current) ref.current.style.transform = `translateY(${y - ref.current.offsetHeight / 2}px)`;
   });
   return (
@@ -99,6 +100,21 @@ function ScreenMask({ size }: { size: number }) {
 
 function FocusText({ dark }: { dark: boolean }) {
   const [text, setText] = useState("");
+  const barRef = useRef<HTMLDivElement>(null);
+  const visible = text !== "";
+
+  // Reserves the bar's height at the bottom so keyboard focus never scrolls under it (WCAG 2.4.11).
+  useEffect(() => {
+    const bar = barRef.current;
+    if (!visible || !bar) return;
+    const root = document.documentElement;
+    const observer = new ResizeObserver(() => root.style.setProperty("scroll-padding-bottom", `${bar.offsetHeight}px`));
+    observer.observe(bar);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty("scroll-padding-bottom");
+    };
+  }, [visible]);
 
   useEffect(() => {
     const show = (event: Event) => {
@@ -118,6 +134,7 @@ function FocusText({ dark }: { dark: boolean }) {
   if (!text) return null;
   return (
     <div
+      ref={barRef}
       aria-hidden="true"
       data-dark={dark || undefined}
       className="a11y-toolbar pointer-events-none fixed inset-x-0 bottom-0 z-50 border-t-4 border-accent px-6 py-4 font-body text-2xl leading-snug shadow-lg print:hidden"
@@ -131,7 +148,7 @@ export function ReadingAids() {
   const { prefs } = useA11yState();
   return (
     <>
-      {prefs.readingGuide ? <ReadingRuler color={RULER_COLOURS[prefs.rulerColor]} size={prefs.rulerSize} /> : null}
+      {prefs.readingGuide ? <ReadingRuler color={RULER_SWATCHES[prefs.rulerColor]} size={prefs.rulerSize} /> : null}
       {prefs.readingMask ? <ScreenMask size={prefs.maskSize} /> : null}
       {prefs.focusText ? <FocusText dark={prefs.toolbarDark} /> : null}
     </>

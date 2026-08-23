@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Atkinson_Hyperlegible_Next, Jost } from "next/font/google";
 import { A11yTrigger } from "@/components/a11y/A11yTrigger";
-import { A11yToolbar } from "@/components/a11y/A11yToolbar";
 import { ReadingAids } from "@/components/a11y/ReadingAids";
+import { ToolbarHost } from "@/components/a11y/ToolbarHost";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SkipLink } from "@/components/layout/SkipLink";
@@ -111,7 +111,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           campusLinks={navigation.uetCampuses}
         />
         <A11yTrigger placement="floating" />
-        <A11yToolbar />
+        <ToolbarHost />
         <ReadingAids />
         <script
           type="application/ld+json"

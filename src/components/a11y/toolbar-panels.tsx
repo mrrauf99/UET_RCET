@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Icon } from "@/components/ui/Icon";
 import { cn } from "@/lib/cn";
 import type { FocusSoundMode } from "@/lib/a11y/focus-sound";
-import { COLOR_PRESETS, DEFAULT_PREFS, LETTER_SPACINGS, LINE_HEIGHTS, RULER_COLORS, type A11yPrefs } from "@/lib/a11y/prefs";
+import { COLOR_PRESETS, DEFAULT_PREFS, LETTER_SPACINGS, LINE_HEIGHTS, RULER_COLORS, RULER_SWATCHES, type A11yPrefs } from "@/lib/a11y/prefs";
 import { resolvedAttribute, updatePrefs } from "@/lib/a11y/store";
 import { currentTranslation, showOriginal, translatePage } from "@/lib/a11y/translate";
 import { VOICE_COMMANDS } from "@/lib/a11y/voice-control";
@@ -212,6 +211,7 @@ export function TranslationPanel({ announce }: { announce: Announce }) {
   );
 
   const choose = async (language: (typeof LANGUAGES)[number]) => {
+    if (pending) return;
     setPending(language.code);
     setError("");
     try {
@@ -231,14 +231,7 @@ export function TranslationPanel({ announce }: { announce: Announce }) {
         Translates this page with Google Translate. Machine translation can contain errors.
       </p>
       {active ? (
-        <button
-          type="button"
-          onClick={showOriginal}
-          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-full border-2 border-(--tb-fg) font-bold hover:bg-(--tb-hover)"
-        >
-          <Icon name="reset" />
-          Show original (English)
-        </button>
+        <ResetButton label="Show original (English)" onClick={showOriginal} />
       ) : null}
       {error ? (
         <p role="alert" className="rounded-md border-2 border-(--tb-accent) p-3 text-sm">
@@ -261,14 +254,19 @@ export function TranslationPanel({ announce }: { announce: Announce }) {
               type="button"
               aria-pressed={active === language.code}
               aria-busy={pending === language.code || undefined}
-              disabled={pending !== null}
+              // aria-disabled keeps keyboard focus on the button; disabled would drop it to <body>.
+              aria-disabled={pending !== null || undefined}
               onClick={() => choose(language)}
-              className="flex min-h-11 w-full items-center justify-between gap-3 rounded-sm px-2 text-start hover:bg-(--tb-hover) aria-pressed:bg-(--tb-accent) aria-pressed:text-(--tb-on-accent) disabled:cursor-wait"
+              className="flex min-h-11 w-full items-center justify-between gap-3 rounded-sm px-2 text-start hover:bg-(--tb-hover) aria-pressed:bg-(--tb-accent) aria-pressed:text-(--tb-on-accent) aria-disabled:cursor-wait"
             >
               <span className="font-bold">{language.name}</span>
-              <span lang={language.code} className="opacity-80">
-                {pending === language.code ? "Translating…" : language.native}
-              </span>
+              {pending === language.code ? (
+                <span className="opacity-80">Translating…</span>
+              ) : (
+                <span lang={language.code} className="opacity-80">
+                  {language.native}
+                </span>
+              )}
             </button>
           </li>
         ))}
@@ -353,14 +351,6 @@ export function ColourPanel({ prefs, announce }: PrefsPanelProps) {
     </>
   );
 }
-
-const RULER_SWATCHES: Record<A11yPrefs["rulerColor"], string> = {
-  red: "#b3261e",
-  blue: "#1d4fa8",
-  yellow: "#f5c451",
-  green: "#1b6e3c",
-  black: "#000000",
-};
 
 export function RulerPanel({ prefs, announce }: PrefsPanelProps) {
   return (
