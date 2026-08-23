@@ -35,10 +35,6 @@ export class FocusSound {
   private source: AudioBufferSourceNode | null = null;
   private gain: GainNode | null = null;
 
-  get playing() {
-    return this.source !== null;
-  }
-
   start(mode: FocusSoundMode, volume: number) {
     this.stop();
     this.context ??= new AudioContext();

@@ -3,9 +3,16 @@ export const STORAGE_KEY = "rcet:a11y:v1";
 export const TEXT_SCALES = [87.5, 100, 112.5, 125, 150, 175, 200] as const;
 export const LINE_HEIGHTS = [0, 1.8, 2.2, 2.6] as const;
 export const LETTER_SPACINGS = [0, 0.06, 0.12, 0.2] as const;
-export const FONTS = ["default", "arial", "verdana", "georgia"] as const;
+const FONTS = ["default", "arial", "verdana", "georgia"] as const;
 export const COLOR_PRESETS = ["none", "black-white", "black-yellow", "blue-yellow", "cream-black", "yellow-black", "white-blue"] as const;
 export const RULER_COLORS = ["red", "blue", "yellow", "green", "black"] as const;
+export const RULER_SWATCHES: Record<(typeof RULER_COLORS)[number], string> = {
+  red: "#b3261e",
+  blue: "#1d4fa8",
+  yellow: "#f5c451",
+  green: "#1b6e3c",
+  black: "#000000",
+};
 
 export interface A11yPrefs {
   theme: "system" | "light" | "dark";
@@ -126,8 +133,6 @@ export function applyPreferences(raw: unknown): A11yPrefs {
   set("data-links", prefs.highlightLinks ? "highlight" : null);
   set("data-images", prefs.hideImages ? "hidden" : null);
   set("data-cursor", prefs.cursor === "default" ? null : prefs.cursor + "-" + prefs.cursorColor);
-  set("data-guide", prefs.readingGuide ? "on" : null);
-  set("data-mask", prefs.readingMask ? "on" : null);
 
   return prefs;
 }

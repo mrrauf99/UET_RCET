@@ -76,6 +76,14 @@ function runCommand(phrase: string, stopListening: () => void): string {
   return `Done: ${command}`;
 }
 
+const ERROR_MESSAGES: Record<string, string> = {
+  "not-allowed": "Microphone access was blocked",
+  "service-not-allowed": "Voice control is not allowed in this browser",
+  "audio-capture": "No microphone was found",
+  network: "Voice control needs an internet connection",
+  "language-not-supported": "Voice control does not support English in this browser",
+};
+
 export function startVoiceControl(onUpdate: (message: string) => void, onStop: () => void) {
   const Constructor = recognitionConstructor();
   if (!Constructor) return null;
@@ -98,16 +106,27 @@ export function startVoiceControl(onUpdate: (message: string) => void, onStop: (
     }
   });
   recognition.addEventListener("error", (event) => {
-    if (event.error === "not-allowed") {
-      onUpdate("Microphone access was blocked");
-      stop();
-    }
+    // Silence and our own stop() are routine; every other error would fail again on restart.
+    if (event.error === "no-speech" || event.error === "aborted") return;
+    onUpdate(ERROR_MESSAGES[event.error] ?? "Voice control stopped because of an error. Try again.");
+    stop();
   });
   // Browsers end continuous sessions after silence; restart while the user still wants it on.
   recognition.addEventListener("end", () => {
-    if (active) recognition.start();
+    if (!active) return;
+    try {
+      recognition.start();
+    } catch {
+      onUpdate("Voice control stopped. Try again.");
+      stop();
+    }
   });
-  recognition.start();
+  try {
+    recognition.start();
+  } catch {
+    onStop();
+    return null;
+  }
   onUpdate("Listening… say a command");
   return stop;
 }

@@ -89,11 +89,17 @@ async function languageSelect(): Promise<HTMLSelectElement> {
 }
 
 export async function translatePage(code: string) {
+  // The widget reads this cookie on load, so it is written first and cleared if loading fails.
   writeCookie(`/en/${code}`);
-  await loadWidget();
-  const select = await languageSelect();
-  select.value = code;
-  select.dispatchEvent(new Event("change"));
+  try {
+    await loadWidget();
+    const select = await languageSelect();
+    select.value = code;
+    select.dispatchEvent(new Event("change"));
+  } catch (error) {
+    writeCookie(null);
+    throw error;
+  }
 }
 
 /** Restores the original page; Google offers no reliable in-place undo, so this reloads. */
@@ -105,5 +111,5 @@ export function showOriginal() {
 /** Re-applies a saved translation after a full page load. */
 export function resumeTranslation() {
   const code = currentTranslation();
-  if (code) void translatePage(code).catch(() => writeCookie(null));
+  if (code) void translatePage(code).catch(() => {});
 }

@@ -25,7 +25,8 @@ function mark(element: HTMLElement | undefined) {
   document.querySelector(`[${ACTIVE_ATTRIBUTE}]`)?.removeAttribute(ACTIVE_ATTRIBUTE);
   if (!element) return;
   element.setAttribute(ACTIVE_ATTRIBUTE, "");
-  element.scrollIntoView({ block: "center", behavior: "smooth" });
+  const reduced = document.documentElement.dataset.motion === "reduce";
+  element.scrollIntoView({ block: "center", behavior: reduced ? "auto" : "smooth" });
 }
 
 export function isSpeechSupported() {
@@ -78,6 +79,11 @@ export function useTextToSpeech() {
       position.current = { ...position.current, sentence: position.current.sentence + 1 };
       speakNext();
     };
+    // Without this a failed voice leaves the player showing Pause while nothing is spoken.
+    utterance.addEventListener("error", (event) => {
+      if (current !== generation.current || event.error === "interrupted" || event.error === "canceled") return;
+      setPlaying(false);
+    });
     window.speechSynthesis.speak(utterance);
   }, []);
 
@@ -125,7 +131,6 @@ export function useTextToSpeech() {
     else mark(blocks.current[block]);
   };
 
-  /** Starts reading from the block the user clicked. */
   const readFrom = (target: Element) => {
     blocks.current = readableBlocks();
     const index = blocks.current.findIndex((element) => element === target || element.contains(target));
@@ -138,7 +143,7 @@ export function useTextToSpeech() {
     () => () => {
       generation.current += 1;
       window.speechSynthesis.cancel();
-      document.querySelector(`[${ACTIVE_ATTRIBUTE}]`)?.removeAttribute(ACTIVE_ATTRIBUTE);
+      mark(undefined);
     },
     [],
   );
@@ -146,7 +151,6 @@ export function useTextToSpeech() {
   return {
     playing,
     togglePlay: () => (playing ? stop() : blocks.current.length ? restart() : play()),
-    stop,
     reset,
     previousBlock: () => move(-1, 0),
     nextBlock: () => move(1, 0),
