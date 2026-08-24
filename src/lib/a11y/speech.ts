@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const BLOCK_SELECTOR = "main :is(h1, h2, h3, h4, p, li, blockquote, dt, dd, figcaption)";
+const HOVER_SELECTOR = "h1, h2, h3, h4, h5, h6, p, li, blockquote, dt, dd, figcaption, a, button, label, summary, td, th";
 const ACTIVE_ATTRIBUTE = "data-tts-active";
 
 function readableBlocks(): HTMLElement[] {
@@ -33,26 +34,38 @@ export function isSpeechSupported() {
   return typeof window !== "undefined" && "speechSynthesis" in window;
 }
 
+type SpeechStatus = "idle" | "playing" | "paused";
+
 export function useTextToSpeech() {
-  const [playing, setPlaying] = useState(false);
+  const [status, setStatusState] = useState<SpeechStatus>("idle");
+  const statusRef = useRef<SpeechStatus>("idle");
   const position = useRef({ block: 0, sentence: 0 });
   const blocks = useRef<HTMLElement[]>([]);
   // cancel() still fires onend on the cancelled utterance; a generation check ignores those stale callbacks.
   const generation = useRef(0);
+  const pending = useRef<SpeechSynthesisUtterance | null>(null);
+  const hovered = useRef<HTMLElement | null>(null);
 
-  const stop = useCallback(() => {
+  const setStatus = useCallback((next: SpeechStatus) => {
+    statusRef.current = next;
+    setStatusState(next);
+  }, []);
+
+  const pause = useCallback(() => {
     generation.current += 1;
     window.speechSynthesis.cancel();
-    setPlaying(false);
-  }, []);
+    setStatus("paused");
+  }, [setStatus]);
 
   /** Turning read aloud off (unlike pausing) also clears the highlight and the reading position. */
   const reset = useCallback(() => {
-    stop();
+    generation.current += 1;
+    window.speechSynthesis.cancel();
+    setStatus("idle");
     position.current = { block: 0, sentence: 0 };
     blocks.current = [];
     mark(undefined);
-  }, [stop]);
+  }, [setStatus]);
 
   // Reads only refs and stable setters, so one instance can recurse from utterance callbacks.
   const speak = useCallback(function speakNext() {
@@ -60,7 +73,7 @@ export function useTextToSpeech() {
     if (!element) {
       position.current = { block: 0, sentence: 0 };
       mark(undefined);
-      setPlaying(false);
+      setStatus("idle");
       return;
     }
     const parts = blockSentences(element);
@@ -82,17 +95,53 @@ export function useTextToSpeech() {
     // Without this a failed voice leaves the player showing Pause while nothing is spoken.
     utterance.addEventListener("error", (event) => {
       if (current !== generation.current || event.error === "interrupted" || event.error === "canceled") return;
-      setPlaying(false);
+      setStatus("paused");
     });
+    // Chrome can garbage-collect an unreferenced utterance mid-speech, which silences it and drops onend.
+    pending.current = utterance;
     window.speechSynthesis.speak(utterance);
-  }, []);
+  }, [setStatus]);
 
-  const restart = () => {
+  /** Speaks a short label (e.g. a hovered control). Never interrupts a running reading. */
+  const say = (text: string) => {
+    if (statusRef.current === "playing") return;
     generation.current += 1;
     window.speechSynthesis.cancel();
+    const current = generation.current;
+    // Same cancel-then-speak race as restart().
+    setTimeout(() => {
+      if (current !== generation.current) return;
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "en-GB";
+      pending.current = utterance;
+      window.speechSynthesis.speak(utterance);
+    }, 60);
+  };
+
+  /** Speaks the hovered element's text without highlighting it; ignored while a reading is playing. */
+  const readHovered = (target: Element) => {
+    if (statusRef.current === "playing") return;
+    const element = target.closest<HTMLElement>(HOVER_SELECTOR);
+    if (!element || element.closest("[aria-hidden='true'], .sr-only")) return;
+    const text = (element.getAttribute("aria-label") || element.innerText || "").replace(/\s+/g, " ").trim();
+    if (!text || hovered.current === element) return;
+    hovered.current = element;
+    // Clear a leftover highlight from auto-play; hover reading stays unmarked.
+    mark(undefined);
+    say(text);
+  };
+
+  const restart = () => {
+    hovered.current = null;
+    generation.current += 1;
+    const current = generation.current;
+    window.speechSynthesis.cancel();
     if (blocks.current.length === 0) blocks.current = readableBlocks();
-    setPlaying(true);
-    speak();
+    setStatus("playing");
+    // Chrome silently drops a speak() issued in the same tick as cancel().
+    setTimeout(() => {
+      if (current === generation.current) speak();
+    }, 60);
   };
 
   const play = () => {
@@ -127,7 +176,7 @@ export function useTextToSpeech() {
       }
     }
     position.current = { block, sentence };
-    if (playing) restart();
+    if (statusRef.current === "playing") restart();
     else mark(blocks.current[block]);
   };
 
@@ -149,13 +198,20 @@ export function useTextToSpeech() {
   );
 
   return {
-    playing,
-    togglePlay: () => (playing ? stop() : blocks.current.length ? restart() : play()),
+    status,
+    playing: status === "playing",
+    togglePlay: () => {
+      if (statusRef.current === "playing") pause();
+      else if (blocks.current.length) restart();
+      else play();
+    },
     reset,
+    readHovered,
     previousBlock: () => move(-1, 0),
     nextBlock: () => move(1, 0),
     previousSentence: () => move(0, -1),
     nextSentence: () => move(0, 1),
     readFrom,
+    say,
   };
 }

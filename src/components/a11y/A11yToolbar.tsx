@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent, useId, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { useEffect, useEffectEvent, useId, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { FocusSound, type FocusSoundMode } from "@/lib/a11y/focus-sound";
 import { TEXT_SCALES } from "@/lib/a11y/prefs";
@@ -82,11 +82,12 @@ function ToolButton({ label, color, icon, text, pressed, active, expanded, contr
       tabIndex={tabIndex}
       onClick={onClick}
       onFocus={onFocus}
-      style={{ backgroundColor: `var(${color})` }}
+      style={{ backgroundColor: `var(${color})`, "--tool-c": `var(${color})` } as CSSProperties}
       className={cn(
-        "relative grid size-11 shrink-0 place-items-center rounded-md text-(--tool-icon) transition-transform duration-(--dur-fast) hover:-translate-y-0.5 aria-disabled:opacity-55 lg:size-14",
-        // Active tools carry an underline bar, so state is visible without relying on colour alone.
-        highlighted && "after:absolute after:inset-x-1 after:-bottom-1.5 after:h-1 lg:after:-bottom-2 after:rounded-full after:bg-(--tb-accent)",
+        "relative grid size-11 shrink-0 place-items-center rounded-md text-(--tool-icon) transition-[filter,box-shadow] duration-(--dur-fast) hover:brightness-110 hover:shadow-[0_0_0_2px_var(--tb-bg),0_0_0_4px_var(--tool-c)] aria-disabled:opacity-55 lg:size-14",
+        // The underline is always rendered and scaled in, so hover can animate it; active tools keep it, so state is visible without relying on colour alone.
+        "after:absolute after:inset-x-3 after:-bottom-2 after:h-1 after:origin-left after:scale-x-0 after:rounded-full after:bg-(--tb-accent) after:transition-[scale] after:duration-(--dur-base) after:ease-(--ease-emphasized) hover:after:scale-x-100 focus-visible:after:scale-x-100 lg:after:inset-x-4",
+        highlighted && "after:scale-x-100",
       )}
     >
       {icon ? <ToolbarIcon name={icon} className="size-6 lg:size-8" /> : null}
@@ -109,11 +110,27 @@ function PlayerButton({ label, icon, onClick }: { label: string; icon: ToolbarIc
   );
 }
 
+function PageButton({ direction, onClick }: { direction: "prev" | "next"; onClick: () => void }) {
+  const label = direction === "prev" ? "Show previous tools" : "Show more tools";
+  return (
+    <button
+      type="button"
+      data-label={label}
+      aria-label={label}
+      onClick={onClick}
+      className="grid size-11 shrink-0 place-items-center rounded-full hover:bg-(--tb-hover)"
+    >
+      <ToolbarIcon name={direction === "prev" ? "chevron-left" : "chevron-right"} className="size-7" />
+    </button>
+  );
+}
+
 export function A11yToolbar() {
   const { prefs } = useA11yState();
   const [panel, setPanel] = useState<PanelId | null>(null);
   const [panelLeft, setPanelLeft] = useState(0);
   const [focusIndex, setFocusIndex] = useState(0);
+  const [edges, setEdges] = useState({ prev: false, next: false });
   const [message, setMessage] = useState("");
   const [ttsOn, setTtsOn] = useState(false);
   const [focusSound, setFocusSound] = useState<{ playing: boolean; mode: FocusSoundMode; volume: number }>({
@@ -123,7 +140,12 @@ export function A11yToolbar() {
   });
   const [listening, setListening] = useState(false);
   const [voiceStatus, setVoiceStatus] = useState("");
-  const [tip, setTip] = useState<{ label: string; x: number; y: number; above: boolean } | null>(null);
+  const [tip, setTip] = useState<{ label: string; x: number; y: number; above: boolean; shown: boolean; glide: boolean } | null>(null);
+  // Stays mounted so the label can fade out and glide between neighbouring controls.
+  const hideTip = () => {
+    spokenFor.current = null;
+    setTip((current) => (current?.shown ? { ...current, shown: false } : current));
+  };
   const [playerOffset, setPlayerOffset] = useState({ x: 0, y: 0 });
   const playerRef = useRef<HTMLFieldSetElement>(null);
   const playerDrag = useRef<{ pointerX: number; pointerY: number; offset: { x: number; y: number }; rect: DOMRect } | null>(null);
@@ -136,6 +158,7 @@ export function A11yToolbar() {
   const sound = useRef<FocusSound | null>(null);
   const stopVoice = useRef<(() => void) | null>(null);
   const pointerInput = useRef(false);
+  const spokenFor = useRef<HTMLElement | null>(null);
   const panelId = useId();
   const tts = useTextToSpeech();
 
@@ -172,6 +195,25 @@ export function A11yToolbar() {
     };
   }, []);
 
+  const updateEdges = () => {
+    const row = toolbarRef.current;
+    if (!row) return;
+    const more = { prev: row.scrollLeft > 1, next: row.scrollLeft + row.clientWidth < row.scrollWidth - 1 };
+    setEdges((current) => (current.prev === more.prev && current.next === more.next ? current : more));
+  };
+  useEffect(() => {
+    const row = toolbarRef.current;
+    if (!row) return;
+    const observer = new ResizeObserver(updateEdges);
+    observer.observe(row);
+    updateEdges();
+    return () => observer.disconnect();
+  }, []);
+  const page = (direction: 1 | -1) => {
+    const row = toolbarRef.current;
+    row?.scrollBy({ left: direction * row.clientWidth * 0.8 });
+  };
+
   const closePanel = () => {
     const id = panel;
     setPanel(null);
@@ -195,14 +237,14 @@ export function A11yToolbar() {
     };
   }, [panel]);
 
-  const tipShown = tip !== null;
+  const tipShown = tip?.shown ?? false;
   useEffect(() => {
     if (!tipShown) return;
     // Captured first so Escape only hides the label, without also closing a panel (WCAG 1.4.13).
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
       if (event.key !== "Escape") return;
       event.stopPropagation();
-      setTip(null);
+      hideTip();
     };
     document.addEventListener("keydown", onKeyDown, true);
     return () => document.removeEventListener("keydown", onKeyDown, true);
@@ -222,24 +264,54 @@ export function A11yToolbar() {
     return () => main?.removeEventListener("click", onClick);
   }, [ttsOn]);
 
+  const readHovered = useEffectEvent((target: Element) => tts.readHovered(target));
+
+  useEffect(() => {
+    if (!ttsOn) return;
+    let timer: number | undefined;
+    const onOver = (event: PointerEvent) => {
+      const target = event.target as Element;
+      // The toolbar speaks its own control labels; touch has no hover.
+      if (event.pointerType === "touch" || barRef.current?.contains(target) || playerRef.current?.contains(target)) return;
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => readHovered(target), 150);
+    };
+    document.addEventListener("pointerover", onOver);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("pointerover", onOver);
+    };
+  }, [ttsOn]);
+
   // One tooltip rendered outside the scrolling row, which would otherwise clip it.
   const showTip = (target: EventTarget, keyboard = false) => {
     const button = (target as Element).closest<HTMLElement>("[data-label]");
     if (!button || (keyboard && (pointerInput.current || !button.matches(":focus-visible")))) return;
+    // pointerover also fires for the icon inside a button, so speak once per control.
+    if (ttsOn && spokenFor.current !== button) tts.say(button.dataset.label ?? "");
+    spokenFor.current = button;
     const rect = button.getBoundingClientRect();
     // Controls in the lower half (the floating player) label upwards so the tip stays on screen.
     const above = rect.top > innerHeight / 2;
     const x = Math.min(Math.max(rect.left + rect.width / 2, 72), innerWidth - 72);
-    setTip({ label: button.dataset.label ?? "", x, y: above ? rect.top - 8 : rect.bottom + 8, above });
+    setTip((current) => ({
+      label: button.dataset.label ?? "",
+      x,
+      y: above ? rect.top - 8 : rect.bottom + 8,
+      above,
+      shown: true,
+      // Only glide when moving from a visible label, so a fresh label never sweeps in from its last position.
+      glide: current?.shown ?? false,
+    }));
   };
   const tipHandlers = {
     onPointerOver: (event: { target: EventTarget }) => showTip(event.target),
     onPointerLeave: (event: { relatedTarget: EventTarget | null }) => {
-      if (!tipRef.current?.contains(event.relatedTarget as Node | null)) setTip(null);
+      if (!tipRef.current?.contains(event.relatedTarget as Node | null)) hideTip();
     },
     onFocus: (event: { target: EventTarget }) => showTip(event.target, true),
-    onBlur: () => setTip(null),
-    onClick: () => setTip(null),
+    onBlur: () => hideTip(),
+    onClick: () => hideTip(),
   };
 
   // Clearing first makes a repeated message ("Line spacing increased" twice) a real DOM change, so it is spoken again.
@@ -324,7 +396,7 @@ export function A11yToolbar() {
       event.currentTarget.setPointerCapture(event.pointerId);
       playerDrag.current = { pointerX: event.clientX, pointerY: event.clientY, offset: playerOffset, rect };
       playerDragged.current = false;
-      setTip(null);
+      hideTip();
     },
     onPointerMove: (event: ReactPointerEvent<HTMLButtonElement>) => {
       const drag = playerDrag.current;
@@ -424,7 +496,7 @@ export function A11yToolbar() {
       data-dark={prefs.toolbarDark || undefined}
       // Kept out of Google Translate: it rewrites text nodes, which would break React updates here.
       translate="no"
-      className="a11y-toolbar notranslate fixed inset-x-0 top-0 z-[60] border-b-4 border-accent shadow-md"
+      className="a11y-toolbar notranslate fixed inset-x-0 top-0 z-[60] border-b-4 border-accent shadow-md [view-transition-class:chrome] [view-transition-name:a11y-toolbar]"
     >
       <a
         href="#main"
@@ -434,16 +506,19 @@ export function A11yToolbar() {
         Skip toolbar to main content
       </a>
 
-      <div className="flex items-center gap-2 px-3 lg:gap-3" {...tipHandlers}>
+      <div className="flex items-center gap-2 px-4 lg:gap-3 lg:px-6" {...tipHandlers}>
+        {edges.prev ? <PageButton direction="prev" onClick={() => page(-1)} /> : null}
         <div
           ref={toolbarRef}
           role="toolbar"
           aria-label="Accessibility tools"
           tabIndex={-1}
           onKeyDown={onToolbarKeyDown}
-          onScroll={() => setTip(null)}
-          // One row that scrolls sideways; the thin visible scrollbar shows more tools exist.
-          className="a11y-tools flex min-w-0 flex-1 items-center gap-2 overflow-x-auto pt-2 pb-3 lg:gap-3"
+          onScroll={() => {
+            hideTip();
+            updateEdges();
+          }}
+          className="a11y-tools flex min-w-0 flex-1 items-center gap-2 overflow-x-auto px-1 pt-2 pb-3 lg:gap-3"
         >
           <ToolButton
             label={support.speech ? "Read aloud" : "Read aloud (not supported in this browser)"}
@@ -506,6 +581,7 @@ export function A11yToolbar() {
             {...rove()}
           />
         </div>
+        {edges.next ? <PageButton direction="next" onClick={() => page(1)} /> : null}
 
         {/* Rendered straight after the tools so Tab moves from the open tool into its panel. */}
         {panel ? (
@@ -567,7 +643,7 @@ export function A11yToolbar() {
           // transform (not translate) so it composes with the centring translate utility.
           style={{ transform: `translate(${playerOffset.x}px, ${playerOffset.y}px)` }}
           // Wraps to two rows on the narrowest phones (and at large text) rather than running off screen.
-          className="rise-in fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] left-3 flex max-w-[calc(100vw-1.5rem)] flex-wrap items-center justify-center gap-0.5 rounded-[1.75rem] border-2 border-(--tb-border) bg-(--tb-bg) p-1 shadow-lg sm:bottom-[calc(1rem+env(safe-area-inset-bottom))] sm:left-1/2 sm:-translate-x-1/2"
+          className="rise-in fixed bottom-[calc(7.5rem+env(safe-area-inset-bottom))] left-3 flex max-w-[calc(100vw-1.5rem)] flex-wrap items-center justify-center gap-0.5 rounded-[1.75rem] border-2 border-(--tb-border) bg-(--tb-bg) p-1 shadow-lg sm:bottom-[calc(1rem+env(safe-area-inset-bottom))] sm:left-1/2 sm:-translate-x-1/2"
         >
           <legend className="sr-only">Read aloud controls</legend>
           <button
@@ -585,7 +661,10 @@ export function A11yToolbar() {
             type="button"
             data-label={tts.playing ? "Pause reading" : "Play reading"}
             aria-label={tts.playing ? "Pause reading" : "Play reading"}
-            onClick={tts.togglePlay}
+            onClick={() => {
+              announce(tts.playing ? "Reading paused" : "Reading");
+              tts.togglePlay();
+            }}
             className="grid size-12 place-items-center rounded-full bg-(--tb-accent) text-(--tb-on-accent)"
           >
             <ToolbarIcon name={tts.playing ? "pause" : "play"} />
@@ -603,11 +682,14 @@ export function A11yToolbar() {
           ref={tipRef}
           aria-hidden="true"
           style={{ left: tip.x, top: tip.y }}
-          onPointerLeave={() => setTip(null)}
+          onPointerLeave={() => hideTip()}
+          data-shown={tip.shown}
+          data-glide={tip.glide}
           className={cn(
             // The ::before strip bridges the gap to the control so the pointer can move onto the label.
-            "a11y-tip fixed z-10 -translate-x-1/2 rounded-md bg-(--tb-fg) px-2.5 py-1.5 text-sm font-bold whitespace-nowrap text-(--tb-bg) shadow-md before:absolute before:inset-x-0 before:h-2",
+            "a11y-tip fixed z-10 -translate-x-1/2 rounded-md border border-black/20 bg-white px-2.5 py-1.5 text-sm font-bold whitespace-nowrap text-black shadow-md before:absolute before:inset-x-0 before:h-2",
             tip.above ? "-translate-y-full before:-bottom-2" : "before:-top-2",
+            !tip.shown && "pointer-events-none",
           )}
         >
           {tip.label}

@@ -49,31 +49,29 @@ const icons = {
       <path d="M6 8v3M10 8v4M14 8v3M18 8v4" />
     </>
   ),
-  cursor: <path d="M5 3v15l4-3.7 2.7 6 2.7-1.2-2.6-5.9h5.6z" />,
+  cursor: <path d="M5 3v15l4-3.7 2.7 6 2.7-1.2-2.6-5.9h5.6z" fill="currentColor" />,
   mask: (
     <>
-      <path d="M3 4h18M3 7h18" />
-      <rect x="2" y="10" width="20" height="4" rx="1" />
-      <path d="M3 17h18M3 20h18" />
+      <path d="M3 4h18M3 7.5h18M3 16.5h18M3 20h18" />
+      <path d="M3 10.5h18M3 13.5h18" />
     </>
   ),
   options: (
     <>
-      <path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" />
-      <circle cx="16" cy="6" r="2" />
-      <circle cx="10" cy="12" r="2" />
-      <circle cx="18" cy="18" r="2" />
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M3 8.5h18M6.5 12h6M6.5 15h4" />
+      <path d="M12 17.5c1.5-2.2 3.2-3 5-3s3.5.8 5 3c-1.5 2.2-3.2 3-5 3s-3.5-.8-5-3z" fill="var(--tool-c, #fff)" />
+      <circle cx="17" cy="17.5" r="1.2" />
     </>
   ),
   structure: (
     <>
-      <path d="M4 5h6M4 10h4M4 15h4M4 20h6" />
-      <path d="M8 5v15" />
-      <rect x="13" y="3" width="8" height="4" rx="1" />
-      <rect x="13" y="10" width="8" height="4" rx="1" />
-      <rect x="13" y="17" width="8" height="4" rx="1" />
+      <path d="M12 3l9 4.5-9 4.5-9-4.5z" />
+      <path d="M3 12l9 4.5 9-4.5M3 16.5l9 4.5 9-4.5" />
     </>
   ),
+  "chevron-left": <path d="M15 5l-7 7 7 7" />,
+  "chevron-right": <path d="M9 5l7 7-7 7" />,
   moon: <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" />,
   sun: (
     <>
