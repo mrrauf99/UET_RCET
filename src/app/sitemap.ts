@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { getDepartments } from "@/lib/content";
 import { SITE_URL } from "@/lib/site";
 
-const STATIC_ROUTES = ["", "/about", "/departments", "/admissions", "/faculty", "/facilities", "/alumni", "/news"];
+const STATIC_ROUTES = ["", "/about", "/departments", "/admissions", "/faculty", "/facilities", "/alumni", "/news", "/rachna-gpt"];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const departments = await getDepartments();

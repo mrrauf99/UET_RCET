@@ -2,16 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useId, useRef, useState } from "react";
+import { useId, useRef, useState, type CSSProperties } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { cn } from "@/lib/cn";
-import { isCurrentPath } from "@/lib/nav";
+import { childHrefs, isCurrentAmong, isCurrentPath } from "@/lib/nav";
 import type { ContentLink, NavItem } from "@/types/content";
 
 interface MobileNavProps {
   items: readonly NavItem[];
   utilityLinks: readonly ContentLink[];
 }
+
+const iconButtonClasses =
+  "grid size-11 place-items-center rounded-sm text-on-band transition-[background-color,scale] duration-(--dur-fast) ease-(--ease-out) hover:bg-on-band/10 active:scale-[0.94]";
 
 export function MobileNav({ items, utilityLinks }: MobileNavProps) {
   const pathname = usePathname();
@@ -34,7 +37,7 @@ export function MobileNav({ items, utilityLinks }: MobileNavProps) {
       <button
         ref={toggleRef}
         type="button"
-        className="grid size-11 place-items-center rounded-sm text-on-band"
+        className={iconButtonClasses}
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls="mobile-menu"
@@ -65,7 +68,7 @@ export function MobileNav({ items, utilityLinks }: MobileNavProps) {
           </h2>
           <button
             type="button"
-            className="grid size-11 place-items-center rounded-sm"
+            className={iconButtonClasses}
             onClick={closeMenu}
           >
             <Icon name="close" className="size-6" />
@@ -75,9 +78,9 @@ export function MobileNav({ items, utilityLinks }: MobileNavProps) {
 
         <nav aria-label="Main" className="px-(--space-gutter) py-4">
           <ul className="divide-y divide-border">
-            {items.map((item) =>
+            {items.map((item, index) =>
               item.kind === "link" ? (
-                <li key={item.id}>
+                <li key={item.id} className="nav-sheet-item" style={{ "--i": index } as CSSProperties}>
                   <Link
                     href={item.href}
                     onClick={closeMenu}
@@ -88,7 +91,7 @@ export function MobileNav({ items, utilityLinks }: MobileNavProps) {
                   </Link>
                 </li>
               ) : (
-                <li key={item.id}>
+                <li key={item.id} className="nav-sheet-item" style={{ "--i": index } as CSSProperties}>
                   <button
                     type="button"
                     className="flex min-h-14 w-full items-center justify-between rounded-sm px-3 text-start text-lg font-bold transition-[color,background-color] duration-(--dur-fast) hover:bg-muted hover:text-accent focus-visible:bg-muted focus-visible:text-accent"
@@ -99,25 +102,28 @@ export function MobileNav({ items, utilityLinks }: MobileNavProps) {
                     {item.label}
                     <Icon
                       name="chevron-down"
-                      className={cn("size-5 transition-transform duration-(--dur-base)", expanded === item.id && "rotate-180")}
+                      className={cn("size-5 transition-transform duration-(--dur-base) ease-(--ease-out)", expanded === item.id && "rotate-180")}
                     />
                   </button>
-                  <ul id={`mobile-group-${item.id}`} hidden={expanded !== item.id} className="pop-in pb-3">
-                    {item.children.map((child) =>
-                      child.kind === "link" ? (
-                        <li key={child.id}>
-                          <Link
-                            href={child.href}
-                            onClick={closeMenu}
-                            className="flex min-h-11 items-center rounded-sm px-3 ps-7 text-base transition-[color,background-color] duration-(--dur-fast) hover:bg-muted hover:text-accent focus-visible:bg-muted focus-visible:text-accent aria-[current=page]:bg-muted aria-[current=page]:font-bold aria-[current=page]:text-accent"
-                            aria-current={isCurrentPath(pathname, child.href) ? "page" : undefined}
-                          >
-                            {child.label}
-                          </Link>
-                        </li>
-                      ) : null,
-                    )}
-                  </ul>
+                  {/* The wrapper animates its height; padding lives on the list so the collapsed height can reach zero. */}
+                  <div id={`mobile-group-${item.id}`} hidden={expanded !== item.id} className="accordion">
+                    <ul className="pb-3">
+                      {item.children.map((child) =>
+                        child.kind === "link" ? (
+                          <li key={child.id}>
+                            <Link
+                              href={child.href}
+                              onClick={closeMenu}
+                              className="flex min-h-11 items-center rounded-sm px-3 ps-7 text-base transition-[color,background-color] duration-(--dur-fast) hover:bg-muted hover:text-accent focus-visible:bg-muted focus-visible:text-accent aria-[current=page]:bg-muted aria-[current=page]:font-bold aria-[current=page]:text-accent"
+                              aria-current={isCurrentAmong(pathname, child.href, childHrefs(item.children)) ? "page" : undefined}
+                            >
+                              {child.label}
+                            </Link>
+                          </li>
+                        ) : null,
+                      )}
+                    </ul>
+                  </div>
                 </li>
               ),
             )}

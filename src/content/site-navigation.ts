@@ -36,6 +36,7 @@ export const footerExploreLinks = [
   { label: "Faculty", href: "/faculty", external: false },
   { label: "Alumni", href: "/alumni", external: false },
   { label: "News and events", href: "/news", external: false },
+  { label: "RachnaGPT", href: "/rachna-gpt", external: false },
 ] satisfies readonly ContentLink[];
 
 export const uetCampusLinks: readonly ContentLink[] = campusLinks.flatMap((item) =>

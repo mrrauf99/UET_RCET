@@ -62,7 +62,7 @@ export function SiteHeader({ navigation, university, utilityActions }: SiteHeade
         </Container>
       </div>
 
-      <header className="band sticky top-(--toolbar-offset) z-30 shadow-md">
+      <header className="band sticky top-(--toolbar-offset) z-30 shadow-md [view-transition-class:chrome] [view-transition-name:site-header]">
         <Container width="wide" className="flex min-h-(--header-height) items-center justify-between gap-3 sm:gap-6">
           <Wordmark name={university.name} />
           <div className="flex items-center gap-2">
