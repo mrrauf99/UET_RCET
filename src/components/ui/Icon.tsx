@@ -13,6 +13,10 @@ const paths = {
   quote: "M10 11H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v4c0 3-1.5 5-4 6M19 11h-4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v4c0 3-1.5 5-4 6",
   reset: "M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4",
   check: "M5 12.5l4.5 4.5L19 7.5",
+  chat: "M20 11.5a7.5 7.5 0 0 1-10.9 6.7L4 19.5l1.3-4.6A7.5 7.5 0 1 1 20 11.5zM8.5 11.5h.01M12.5 11.5h.01M16.5 11.5h.01",
+  send: "M12 19V5M5.5 11.5L12 5l6.5 6.5",
+  stop: "M7.5 7.5h9v9h-9z",
+  expand: "M14 4h6v6M20 4l-7 7M10 20H4v-6M4 20l7-7",
 } as const;
 
 export type IconName = keyof typeof paths;

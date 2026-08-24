@@ -63,8 +63,8 @@ export function Card({
               sizes={media.sizes}
               quality={90}
               className={cn(
-                "object-cover transition-transform duration-500 ease-(--ease-emphasized)",
-                href && "group-hover:scale-[1.05] group-has-focus-visible:scale-[1.05]",
+                "object-cover transition-transform duration-(--dur-enter) ease-(--ease-emphasized)",
+                href && "group-hover:scale-[1.03] group-has-focus-visible:scale-[1.03]",
               )}
             />
           ) : (

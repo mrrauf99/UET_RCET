@@ -7,7 +7,6 @@ interface ImageFrameProps {
   image: ImageAsset | null;
   sizes: string;
   ratio?: "4/3" | "16/9" | "4/5";
-  chamfer?: boolean;
   preload?: boolean;
   /** Empty alt where adjacent text already names the subject, so it isn't announced twice. */
   decorative?: boolean;
@@ -17,13 +16,12 @@ interface ImageFrameProps {
 const ratios = { "4/3": "aspect-4/3", "16/9": "aspect-video", "4/5": "aspect-4/5" } as const;
 
 /** Approved photo when one exists; otherwise a decorative girih panel (no hotlinked or stock images). */
-export function ImageFrame({ image, sizes, ratio = "4/3", chamfer = false, preload = false, decorative = false, className }: ImageFrameProps) {
+export function ImageFrame({ image, sizes, ratio = "4/3", preload = false, decorative = false, className }: ImageFrameProps) {
   return (
     <div
       className={cn(
         "band relative overflow-hidden",
         ratios[ratio],
-        chamfer && "[clip-path:polygon(0_0,calc(100%-1.5rem)_0,100%_1.5rem,100%_100%,0_100%)]",
         className,
       )}
     >
