@@ -38,7 +38,7 @@ export function Facilities({ groups, labCount, image }: FacilitiesProps) {
 
         <div className="grid gap-10 sm:grid-cols-2">
           {image ? (
-            <ImageFrame image={image} ratio="16/9" chamfer sizes="(min-width: 1024px) 60vw, 100vw" className="reveal sm:col-span-2" />
+            <ImageFrame image={image} ratio="16/9" sizes="(min-width: 1024px) 60vw, 100vw" className="reveal sm:col-span-2" />
           ) : null}
           {groups.map((group) => (
             <div key={group.id}>

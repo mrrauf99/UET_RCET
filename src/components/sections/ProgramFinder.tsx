@@ -5,6 +5,7 @@ import { useId, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
+import { cn } from "@/lib/cn";
 import { levelLabels } from "@/lib/format";
 import type { Program } from "@/types/content";
 
@@ -28,6 +29,8 @@ const levelOptions = [
 export function ProgramFinder({ rows, departments }: ProgramFinderProps) {
   const [departmentId, setDepartmentId] = useState("all");
   const [level, setLevel] = useState<"all" | Program["level"]>("all");
+  // Results only animate after a filter change, so the first paint doesn't stack on the page transition.
+  const [filtered, setFiltered] = useState(false);
   const departmentFieldId = useId();
   const levelFieldId = useId();
 
@@ -47,7 +50,10 @@ export function ProgramFinder({ rows, departments }: ProgramFinderProps) {
           <Select
             id={departmentFieldId}
             value={departmentId}
-            onValueChange={setDepartmentId}
+            onValueChange={(value) => {
+              setDepartmentId(value);
+              setFiltered(true);
+            }}
             options={[
               { value: "all", label: "All departments" },
               ...departments.map((department) => ({ value: department.id, label: department.name })),
@@ -61,7 +67,10 @@ export function ProgramFinder({ rows, departments }: ProgramFinderProps) {
           <Select
             id={levelFieldId}
             value={level}
-            onValueChange={(value) => setLevel(value as typeof level)}
+            onValueChange={(value) => {
+              setLevel(value as typeof level);
+              setFiltered(true);
+            }}
             options={levelOptions}
           />
         </div>
@@ -75,7 +84,7 @@ export function ProgramFinder({ rows, departments }: ProgramFinderProps) {
       </div>
 
       {visible.length > 0 ? (
-        <ul className="mt-3 divide-y divide-border border-y border-border">
+        <ul key={`${departmentId}:${level}`} className={cn("mt-3 divide-y divide-border border-y border-border", filtered && "swap-in")}>
           {visible.map(({ program, departmentName }) => (
             <li key={program.id} className="group relative grid gap-1 py-5 sm:grid-cols-[1fr_auto] sm:items-center sm:gap-6">
               <div>
@@ -99,7 +108,7 @@ export function ProgramFinder({ rows, departments }: ProgramFinderProps) {
           ))}
         </ul>
       ) : (
-        <p className="mt-3 rounded-md border border-border-strong p-6">
+        <p className={cn("mt-3 rounded-md border border-border-strong p-6", filtered && "swap-in")}>
           No programs match these filters. Choose “All departments” or “All levels” to see more.
         </p>
       )}

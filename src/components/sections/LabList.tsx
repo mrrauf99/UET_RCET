@@ -46,12 +46,12 @@ export function LabList({ labs, photos }: { labs: readonly Lab[]; photos: Readon
                     ))}
                   </ul>
                   {rest.length > 0 ? (
-                    <details className="group mt-auto">
+                    <details className="accordion-details group mt-auto">
                       <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1 font-bold text-link underline-offset-4 hover:underline [&::-webkit-details-marker]:hidden">
                         <span className="group-open:hidden">Show {rest.length} more</span>
                         <span className="hidden group-open:inline">Show less</span>
                       </summary>
-                      <ul className="pop-in flex flex-col gap-1.5 text-fg-muted">
+                      <ul className="flex flex-col gap-1.5 text-fg-muted">
                         {rest.map((item) => (
                           <li key={item} className="flex gap-2">
                             <span aria-hidden="true" className="mt-2 size-1.5 shrink-0 rotate-45 bg-accent" />

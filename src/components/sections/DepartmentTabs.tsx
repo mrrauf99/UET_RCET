@@ -164,7 +164,7 @@ export function DepartmentTabs({ tabs, label }: { tabs: readonly DepartmentTab[]
             hidden={tab.id !== active}
             // Focusable so keyboard users can move from the tab straight into short panels.
             tabIndex={0}
-            className={cn("focus-visible:outline-offset-8", switched && "rise-in")}
+            className={cn("focus-visible:outline-offset-8", switched && "swap-in")}
           >
             {tab.content}
           </section>

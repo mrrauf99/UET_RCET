@@ -15,7 +15,7 @@ export function CampusMap({ university }: { university: UniversityInfo }) {
             Get directions
           </LinkButton>
         </div>
-        <div className="reveal mt-10 aspect-4/3 overflow-hidden border border-border bg-surface sm:aspect-video lg:aspect-21/9 [clip-path:polygon(0_0,calc(100%-1.5rem)_0,100%_1.5rem,100%_100%,0_100%)]">
+        <div className="reveal mt-10 aspect-4/3 overflow-hidden border border-border bg-surface sm:aspect-video lg:aspect-21/9">
           {/* Keyless embed; lazy loading keeps Google's scripts off the critical path until the map nears the viewport.
               No sandbox: the cross-origin map needs scripts, same-origin storage and popups to work. */}
           {/* oxlint-disable-next-line react/iframe-missing-sandbox */}
