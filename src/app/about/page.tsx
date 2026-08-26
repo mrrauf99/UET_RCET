@@ -30,7 +30,7 @@ export default async function AboutPage() {
               <p key={paragraph.slice(0, 40)}>{paragraph}</p>
             ))}
           </div>
-          {campus ? <ImageFrame image={campus} ratio="4/5" chamfer sizes="(min-width: 1024px) 40vw, 100vw" /> : null}
+          {campus ? <ImageFrame image={campus} ratio="4/5" sizes="(min-width: 1024px) 40vw, 100vw" /> : null}
         </div>
       </PageSection>
       <PageSection id="vision" title="Vision">

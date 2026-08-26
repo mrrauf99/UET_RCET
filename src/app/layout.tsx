@@ -6,8 +6,10 @@ import { ToolbarHost } from "@/components/a11y/ToolbarHost";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SkipLink } from "@/components/layout/SkipLink";
+import { ChatHost } from "@/components/rachna-gpt/ChatHost";
 import { PREFERENCES_INIT_SCRIPT } from "@/lib/a11y/prefs";
 import { getFooter, getNavigation, getUniversity } from "@/lib/content";
+import { IMAGE_FADE_SCRIPT } from "@/lib/image-fade";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
@@ -93,6 +95,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: PREFERENCES_INIT_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: IMAGE_FADE_SCRIPT }} />
       </head>
       <body className="flex min-h-dvh flex-col antialiased">
         <SkipLink />
@@ -111,6 +114,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           campusLinks={navigation.uetCampuses}
         />
         <A11yTrigger placement="floating" />
+        <ChatHost />
         <ToolbarHost />
         <ReadingAids />
         <script

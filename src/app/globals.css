@@ -101,9 +101,11 @@
   --space-section: clamp(4rem, 3rem + 4vw, 7rem);
   --space-gutter: clamp(1rem, 4vw, 2.5rem);
   --header-height: 4.5rem;
-  --dur-fast: 120ms;
-  --dur-base: 200ms;
-  --dur-slow: 600ms;
+  /* Motion scale. Exits use the step below their entrance so dismissing always feels quicker than arriving. */
+  --dur-fast: 120ms; /* press, hover, colour; exits of small popovers */
+  --dur-base: 200ms; /* menus, chevrons, accordions, tab and filter swaps */
+  --dur-enter: 300ms; /* sheets and page content arriving */
+  --dur-slow: 600ms; /* the hero's one authored entrance */
 
   color-scheme: light;
 }
@@ -354,6 +356,9 @@
   a {
     text-underline-offset: 0.2em;
     text-decoration-thickness: 1px;
+    transition:
+      color var(--dur-fast) var(--ease-out),
+      text-decoration-color var(--dur-fast) var(--ease-out);
   }
 
   /* --rcet-ring/--rcet-halo are set by .band and reset by .surface so nested panels get the right ring. */
@@ -493,18 +498,38 @@
   }
 }
 
+/* Each use sets its own travel; not inherited, so a swapped panel doesn't shrink the reveals inside it. */
+@property --rise {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0.75rem;
+}
+
 /* transform, not the translate/scale properties, so Tailwind's translate utilities still compose. */
 @keyframes rise-in {
   from {
     opacity: 0;
-    transform: translateY(0.75rem);
+    transform: translateY(var(--rise));
   }
 }
 
-@keyframes pop-in {
+@keyframes typing {
+  0%,
+  70%,
+  100% {
+    opacity: 0.35;
+    translate: 0 0;
+  }
+  35% {
+    opacity: 1;
+    translate: 0 -0.2rem;
+  }
+}
+
+@keyframes settle-in {
   from {
     opacity: 0;
-    transform: translateY(-0.25rem) scale(0.98);
+    transform: scale(1.04);
   }
 }
 
@@ -521,27 +546,99 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  /* The hero photo wipes in left to right, matching the seam below it. */
   :root:not([data-motion="reduce"]) .girih-draw {
     animation: girih-draw 900ms var(--ease-out) 150ms both;
   }
   :root:not([data-motion="reduce"]) .hero-enter {
-    animation: rise-in 600ms var(--ease-emphasized) calc(var(--i, 0) * 80ms) both;
+    animation: rise-in var(--dur-slow) var(--ease-emphasized) calc(var(--i, 0) * 80ms) both;
   }
   :root:not([data-motion="reduce"]) .hero-wipe {
-    animation: girih-draw 800ms var(--ease-emphasized) 120ms both;
+    animation: settle-in 900ms var(--ease-emphasized) 120ms both;
   }
 
-  /* Menus and panels grow from their trigger so the relationship is visible. */
-  :root:not([data-motion="reduce"]) .pop-in:not([hidden]) {
-    transform-origin: top;
-    animation: pop-in var(--dur-base) var(--ease-emphasized);
+  /* Menus and panels grow from their trigger so the relationship is visible. Transitions rather than
+     keyframes, so a quick open-close-open reverses from where it is instead of restarting. */
+  :root:not([data-motion="reduce"]) .pop-in {
+    transform-origin: top left;
+    transition:
+      opacity var(--dur-fast) var(--ease-out),
+      translate var(--dur-fast) var(--ease-out),
+      scale var(--dur-fast) var(--ease-out),
+      display var(--dur-fast) allow-discrete;
   }
+  :root:not([data-motion="reduce"]) .pop-in:not([hidden]) {
+    transition-duration: var(--dur-base);
+    transition-timing-function: var(--ease-emphasized);
+  }
+  :root:not([data-motion="reduce"]) .pop-in[hidden] {
+    opacity: 0;
+    translate: 0 -0.25rem;
+    scale: 0.98;
+  }
+  @starting-style {
+    :root:not([data-motion="reduce"]) .pop-in:not([hidden]) {
+      opacity: 0;
+      translate: 0 -0.25rem;
+      scale: 0.98;
+    }
+  }
+
+  /* Accordions open to their real height so the content below is pushed, not teleported.
+     Browsers without interpolate-size still fade; the height simply snaps. */
+  :root:not([data-motion="reduce"]) .accordion {
+    interpolate-size: allow-keywords;
+    overflow: clip;
+    transition:
+      height var(--dur-base) var(--ease-out),
+      opacity var(--dur-base) var(--ease-out),
+      display var(--dur-base) allow-discrete;
+  }
+  :root:not([data-motion="reduce"]) .accordion[hidden] {
+    height: 0;
+    opacity: 0;
+    transition-duration: var(--dur-fast);
+  }
+  @starting-style {
+    :root:not([data-motion="reduce"]) .accordion:not([hidden]) {
+      height: 0;
+      opacity: 0;
+    }
+  }
+
   :root:not([data-motion="reduce"]) .a11y-tip {
     animation: tip-in var(--dur-fast) var(--ease-out);
+    transition:
+      opacity var(--dur-fast) var(--ease-out),
+      scale var(--dur-fast) var(--ease-out);
+  }
+  :root:not([data-motion="reduce"]) .a11y-tip[data-glide="true"] {
+    transition-property: opacity, scale, left, top;
+    transition-duration: var(--dur-base);
+    transition-timing-function: var(--ease-emphasized);
+  }
+  .a11y-tip[data-shown="false"] {
+    opacity: 0;
+    scale: 0.96;
   }
   :root:not([data-motion="reduce"]) .rise-in {
-    animation: rise-in 300ms var(--ease-emphasized);
+    animation: rise-in var(--dur-enter) var(--ease-emphasized);
+  }
+  /* Same place, new content (tab panels, filtered results): barely any travel, so it reads as a swap, not an arrival. */
+  :root:not([data-motion="reduce"]) .swap-in {
+    --rise: 0.25rem;
+    animation: rise-in var(--dur-base) var(--ease-out);
+  }
+  /* With motion the pulsing dots carry the meaning, so "Thinking…" is kept for screen readers only. */
+  :root:not([data-motion="reduce"]) .typing-dot {
+    animation: typing 1.2s var(--ease-out) calc(var(--i, 0) * 160ms) infinite;
+  }
+  :root:not([data-motion="reduce"]) .typing-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   /* Scroll-driven, so no JavaScript or observers; unsupported browsers simply show the content. */
@@ -553,13 +650,47 @@
     }
   }
 
-  /* Route changes: the outgoing page fades quickly, the new one rises in. Header and footer stay put. */
+  /* Route changes: the outgoing page fades quickly, the new one settles in. Header and footer stay put. */
   ::view-transition-old(.page-exit) {
-    animation: fade-out 120ms ease-in both;
+    animation: fade-out var(--dur-fast) ease-in both;
   }
   ::view-transition-new(.page-enter) {
-    animation: rise-in 320ms var(--ease-emphasized) 60ms both;
+    --rise: 0.5rem;
+    animation: rise-in var(--dur-enter) var(--ease-emphasized) 40ms both;
   }
+}
+
+/* Separate from the block above: browsers without ::details-content would drop the whole rule list. */
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-motion="reduce"]) details.accordion-details::details-content {
+    interpolate-size: allow-keywords;
+    height: 0;
+    overflow: clip;
+    transition:
+      height var(--dur-base) var(--ease-out),
+      content-visibility var(--dur-base) allow-discrete;
+  }
+  :root:not([data-motion="reduce"]) details.accordion-details[open]::details-content {
+    height: auto;
+  }
+}
+
+/* Clicks during a route change reach the live page instead of the transition overlay. */
+::view-transition {
+  pointer-events: none;
+}
+
+/* Fixed chrome (header, toolbar) holds still above the page snapshots; otherwise a scrolled page's
+   outgoing snapshot briefly paints over the sticky header. */
+::view-transition-group(.chrome) {
+  animation: none;
+  z-index: 100;
+}
+::view-transition-old(.chrome) {
+  display: none;
+}
+::view-transition-new(.chrome) {
+  animation: none;
 }
 
 /* The toolbar's "pause animations" must also stop page transitions, which the global * rule can't reach. */
@@ -765,8 +896,16 @@ body {
 }
 
 .a11y-tools {
-  scrollbar-width: thin;
-  scrollbar-color: var(--tb-border) transparent;
+  scrollbar-width: none;
+  scroll-behavior: smooth;
+}
+.a11y-tools::-webkit-scrollbar {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .a11y-tools {
+    scroll-behavior: auto;
+  }
 }
 
 .student-life-gallery > li:last-child {
@@ -800,22 +939,32 @@ body {
 @media (prefers-reduced-motion: no-preference) {
   :root:not([data-motion="reduce"]) .nav-sheet {
     transition:
-      translate 320ms var(--ease-emphasized),
-      overlay 320ms allow-discrete,
-      display 320ms allow-discrete;
+      translate var(--dur-enter) var(--ease-emphasized),
+      overlay var(--dur-enter) allow-discrete,
+      display var(--dur-enter) allow-discrete;
   }
-  /* Closing runs the same slide in reverse before the dialog leaves the top layer. */
+  /* Closing runs the same slide in reverse, quicker, before the dialog leaves the top layer. */
   :root:not([data-motion="reduce"]) .nav-sheet:not([open]) {
     translate: 100% 0;
+    transition-duration: var(--dur-base);
   }
   :root:not([data-motion="reduce"]) .nav-sheet::backdrop {
     transition:
-      background-color 320ms var(--ease-out),
-      overlay 320ms allow-discrete,
-      display 320ms allow-discrete;
+      background-color var(--dur-enter) var(--ease-out),
+      overlay var(--dur-enter) allow-discrete,
+      display var(--dur-enter) allow-discrete;
   }
   :root:not([data-motion="reduce"]) .nav-sheet:not([open])::backdrop {
     background-color: transparent;
+    transition-duration: var(--dur-base);
+  }
+  /* Top-level items trail the sheet by a few frames so the list reads in order; capped so the last item
+     is settled well inside the sheet's own slide. Closing doesn't stagger. */
+  :root:not([data-motion="reduce"]) .nav-sheet[open] .nav-sheet-item {
+    transition:
+      opacity var(--dur-enter) var(--ease-out),
+      translate var(--dur-enter) var(--ease-emphasized);
+    transition-delay: calc(min(var(--i, 0), 6) * 20ms);
   }
   @starting-style {
     :root:not([data-motion="reduce"]) .nav-sheet[open] {
@@ -823,6 +972,10 @@ body {
     }
     :root:not([data-motion="reduce"]) .nav-sheet[open]::backdrop {
       background-color: transparent;
+    }
+    :root:not([data-motion="reduce"]) .nav-sheet[open] .nav-sheet-item {
+      opacity: 0;
+      translate: 0.75rem 0;
     }
   }
 }

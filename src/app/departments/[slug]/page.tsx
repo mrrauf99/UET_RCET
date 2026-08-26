@@ -97,7 +97,7 @@ export default async function DepartmentPage({ params }: PageProps<"/departments
                 {department.description ?? "No introduction has been published yet."}
               </p>
             </div>
-            {photo ? <ImageFrame image={photo} ratio="4/3" chamfer sizes="(min-width: 1024px) 40vw, 100vw" /> : null}
+            {photo ? <ImageFrame image={photo} ratio="4/3" sizes="(min-width: 1024px) 40vw, 100vw" /> : null}
           </div>
           {chairman ? (
             <figure className="reveal surface grid gap-8 rounded-lg border border-border p-6 shadow-sm sm:p-10 md:grid-cols-[auto_1fr] md:items-start">
