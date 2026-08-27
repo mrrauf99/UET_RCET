@@ -1,0 +1,52 @@
+"use client";
+
+import dynamic from "next/dynamic";
+import { usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
+import { closePanel, hydrate, openPanel, selectPanelOpen } from "@/lib/rachna-gpt/store";
+import { useChat } from "@/lib/rachna-gpt/use-chat";
+import { ChatLauncher } from "./ChatLauncher";
+
+const loadPanel = () => import("./ChatPanel").then((mod) => mod.ChatPanel);
+
+// The panel (thread, composer, streaming client) stays out of every page's startup JavaScript.
+const ChatPanel = dynamic(loadPanel, { ssr: false });
+
+const warmPanel = () => void loadPanel();
+
+export function ChatHost() {
+  const onFullPage = usePathname() === "/rachna-gpt";
+  const panelOpen = useChat(selectPanelOpen);
+  const launcherRef = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(false);
+
+  useEffect(() => {
+    // Restore the conversation and warm the panel chunk once the page is idle.
+    const warm = () => {
+      void hydrate();
+      warmPanel();
+    };
+    if ("requestIdleCallback" in window) {
+      const id = requestIdleCallback(warm, { timeout: 5000 });
+      return () => cancelIdleCallback(id);
+    }
+    const id = setTimeout(warm, 2000);
+    return () => clearTimeout(id);
+  }, []);
+
+  useEffect(() => {
+    if (onFullPage && panelOpen) closePanel();
+  }, [onFullPage, panelOpen]);
+
+  // The launcher is unmounted while the panel is open, so focus returns once it is back.
+  useEffect(() => {
+    if (panelOpen) wasOpen.current = true;
+    else if (wasOpen.current) {
+      wasOpen.current = false;
+      launcherRef.current?.focus();
+    }
+  }, [panelOpen]);
+
+  if (onFullPage) return null;
+  return panelOpen ? <ChatPanel /> : <ChatLauncher ref={launcherRef} onOpen={openPanel} onWarm={warmPanel} />;
+}
