@@ -2,6 +2,14 @@
 
 The public website for Rachna College of Engineering and Technology (RCET), Gujranwala, a constituent college of UET Lahore. It is built with Next.js 16 (App Router), React 19, TypeScript and Tailwind CSS v4. It includes a built-in accessibility toolbar.
 
+This is a private repository for internal development of the RCET website.
+
+## What's in the site
+
+- **Pages:** home, about, admissions, departments (one page per department), faculty, facilities, news, alumni.
+- **Rachna GPT:** a chat assistant at `/rachna-gpt`, served by the API route `src/app/api/rachna-gpt/route.ts` with per-IP rate limiting.
+- **Accessibility toolbar:** see the section below.
+
 ## Run it
 
 Requires Node.js 20.9 or newer (tested on Node 24).
@@ -20,6 +28,8 @@ npm run dev        # http://localhost:3000
 | `npm run typecheck` | Generates route types, then runs `tsc --noEmit` |
 
 Set `NEXT_PUBLIC_SITE_URL` to change the canonical domain used in metadata, `sitemap.xml` and `robots.txt`. The default is `https://rcet.uet.edu.pk`.
+
+Set `RACHNA_GPT_IP_HEADER` to the header your trusted proxy uses for the client IP (default `x-real-ip`). Rachna GPT's rate limit is in-memory, so use a shared store in production.
 
 ## Folder map
 
