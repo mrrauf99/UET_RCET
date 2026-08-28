@@ -19,7 +19,6 @@ vi.mock("./client", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./client")>()),
   streamChat: (body: ChatRequest, handlers: { signal: AbortSignal; onChunk: (t: string) => void; onChatId: (id: string) => void }) =>
     new Promise<void>((resolve, reject) => {
-      // Mirrors fetch: aborting rejects with an AbortError.
       handlers.signal.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
       calls.push({
         body,
@@ -46,6 +45,20 @@ const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 const messages = () => store.getSnapshot().messages;
 const last = () => messages().at(-1)!;
 const status = () => store.selectStatus(store.getSnapshot());
+
+async function freshStore() {
+  vi.resetModules();
+  store = await import("./store");
+}
+
+const storedMessage = (overrides: Partial<Message>): Message => ({
+  id: Math.random().toString(36).slice(2),
+  role: "user",
+  text: "hello",
+  state: "complete",
+  ts: 1,
+  ...overrides,
+});
 const stored = () => JSON.parse(sessionStorage.getItem(STORAGE_KEY) ?? "null") as { messages: Message[] } | null;
 
 beforeEach(async () => {
@@ -247,20 +260,6 @@ describe("reset", () => {
 });
 
 describe("persistence", () => {
-  async function freshStore() {
-    vi.resetModules();
-    store = await import("./store");
-  }
-
-  const storedMessage = (overrides: Partial<Message>): Message => ({
-    id: Math.random().toString(36).slice(2),
-    role: "user",
-    text: "hello",
-    state: "complete",
-    ts: 1,
-    ...overrides,
-  });
-
   it("restores a saved conversation and turns an interrupted reply into stopped", async () => {
     sessionStorage.setItem(
       STORAGE_KEY,
@@ -331,6 +330,7 @@ describe("persistence", () => {
       store.send(`q${i}`);
       calls[i].chunk(`a${i}`);
       calls[i].done();
+      // oxlint-disable-next-line no-await-in-loop -- finish the current reply before sending the next question
       await settle();
     }
     expect(stored()!.messages).toHaveLength(50);

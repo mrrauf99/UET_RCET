@@ -4,7 +4,6 @@ import { LIMITS } from "@/lib/rachna-gpt/constants";
 import { chatRequestSchema } from "@/lib/rachna-gpt/schema";
 
 export const runtime = "nodejs";
-// Valid while cacheComponents is off; remove if it is ever enabled.
 export const dynamic = "force-dynamic";
 
 const WORD_DELAY_MS = 30;
@@ -21,12 +20,7 @@ export async function POST(request: Request) {
   const limit = acquire(getClientIp(request.headers));
   if (!limit.ok) return json(429, "rate_limited", { "Retry-After": String(limit.retryAfter) });
 
-  let released = false;
-  const release = () => {
-    if (released) return;
-    released = true;
-    limit.release();
-  };
+  const release = limit.release;
 
   try {
     // Content-Length is optional (chunked bodies), so the size is checked again on the text itself.
@@ -46,7 +40,7 @@ export async function POST(request: Request) {
     const pieces = matchAnswer(messages.at(-1)!.content).split(/(\s+)/).filter(Boolean);
     const encoder = new TextEncoder();
     let timer: ReturnType<typeof setTimeout> | undefined;
-    let onAbort = () => {};
+    let onAbort: () => void;
     const finish = () => {
       clearTimeout(timer);
       request.signal.removeEventListener("abort", onAbort);

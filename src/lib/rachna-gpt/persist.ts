@@ -12,13 +12,11 @@ export function loadStoredChat(): { chatId: string | null; messages: Message[] }
   }
   if (!raw) return null;
 
-  let parsed: ReturnType<typeof storedChatSchema.safeParse>;
+  let parsed: ReturnType<typeof storedChatSchema.safeParse> | undefined;
   try {
     parsed = storedChatSchema.safeParse(JSON.parse(raw));
-  } catch {
-    parsed = { success: false } as typeof parsed;
-  }
-  if (!parsed.success) {
+  } catch {}
+  if (!parsed?.success) {
     try {
       sessionStorage.removeItem(STORAGE_KEY);
     } catch {

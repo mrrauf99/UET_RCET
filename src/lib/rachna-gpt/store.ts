@@ -55,8 +55,7 @@ const isRateLimited = () => state.rateLimitedUntil !== null && Date.now() < stat
 function save() {
   const messages = state.messages
     .filter((message) => !(message.state === "streaming" && message.text === ""))
-    .map((message) => ({
-      ...message,
+    .map((message) => Object.assign({}, message, {
       text: message.text.slice(0, LIMITS.storedTextChars),
       state: message.state === "streaming" ? ("stopped" as const) : message.state,
     }))

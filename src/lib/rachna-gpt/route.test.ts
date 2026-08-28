@@ -4,11 +4,11 @@ import { university } from "@/content/university";
 import { FALLBACK_ANSWER, matchAnswer } from "./mock-answers";
 import { RATE_LIMIT, resetRateLimits } from "./rate-limit";
 
-const URL_ = "http://localhost/api/rachna-gpt";
+const API_URL = "http://localhost/api/rachna-gpt";
 
 function post(body: unknown, init: { headers?: Record<string, string>; signal?: AbortSignal; raw?: string } = {}) {
   return POST(
-    new Request(URL_, {
+    new Request(API_URL, {
       method: "POST",
       headers: { "content-type": "application/json", "x-real-ip": "1.1.1.1", ...init.headers },
       body: init.raw ?? JSON.stringify(body),
@@ -25,7 +25,9 @@ async function readAll(response: Response): Promise<string> {
   let text = "";
   for (;;) {
     const pending = reader.read();
+    // oxlint-disable-next-line no-await-in-loop -- advance fake timers before waiting for each chunk
     await vi.advanceTimersByTimeAsync(50);
+    // oxlint-disable-next-line no-await-in-loop -- consume each chunk before starting the next read
     const { done, value } = await pending;
     if (done) return text + decoder.decode();
     text += decoder.decode(value, { stream: true });
@@ -102,8 +104,10 @@ describe("POST /api/rachna-gpt streaming", () => {
 describe("POST /api/rachna-gpt rate limiting", () => {
   it("returns 429 with Retry-After once the per-minute limit is used", async () => {
     for (let i = 0; i < RATE_LIMIT.requests; i++) {
+      // oxlint-disable-next-line no-await-in-loop -- exercise the request limit without hitting the concurrency limit
       const response = await post(ask("hi"));
       expect(response.status).toBe(200);
+      // oxlint-disable-next-line no-await-in-loop -- release the stream slot before the next request
       await response.body!.cancel();
     }
     const limited = await post(ask("hi"));
@@ -126,7 +130,10 @@ describe("POST /api/rachna-gpt rate limiting", () => {
   });
 
   it("releases the slot for requests rejected by validation", async () => {
-    for (let i = 0; i < RATE_LIMIT.concurrent + 1; i++) expect((await post(ask(""))).status).toBe(400);
+    for (let i = 0; i < RATE_LIMIT.concurrent + 1; i++) {
+      // oxlint-disable-next-line no-await-in-loop -- each rejection must release its slot before the next request
+      expect((await post(ask(""))).status).toBe(400);
+    }
   });
 
   it("stops queueing and releases the slot when the client aborts", async () => {

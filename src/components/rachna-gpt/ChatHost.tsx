@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { closePanel, hydrate, openPanel, selectPanelOpen } from "@/lib/rachna-gpt/store";
 import { useChat } from "@/lib/rachna-gpt/use-chat";
+import { scheduleIdle } from "@/lib/schedule-idle";
 import { ChatLauncher } from "./ChatLauncher";
 
 const loadPanel = () => import("./ChatPanel").then((mod) => mod.ChatPanel);
@@ -22,16 +23,10 @@ export function ChatHost() {
 
   useEffect(() => {
     // Restore the conversation and warm the panel chunk once the page is idle.
-    const warm = () => {
+    return scheduleIdle(() => {
       void hydrate();
       warmPanel();
-    };
-    if ("requestIdleCallback" in window) {
-      const id = requestIdleCallback(warm, { timeout: 5000 });
-      return () => cancelIdleCallback(id);
-    }
-    const id = setTimeout(warm, 2000);
-    return () => clearTimeout(id);
+    });
   }, []);
 
   useEffect(() => {

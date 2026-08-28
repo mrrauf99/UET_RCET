@@ -4,8 +4,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { getSnapshot, selectRateLimitedUntil, SERVER_SNAPSHOT, subscribe, type ChatState } from "./store";
 
 /**
- * Subscribes to one slice of the chat store. Selectors must return a primitive or an existing
- * reference: a new object per call makes useSyncExternalStore re-render forever.
+ * Selectors must return primitives or stable references to avoid an infinite render loop.
  */
 export function useChat<T>(selector: (state: ChatState) => T): T {
   return useSyncExternalStore(
@@ -15,7 +14,6 @@ export function useChat<T>(selector: (state: ChatState) => T): T {
   );
 }
 
-/** Seconds left on a 429 cooldown, ticking once a second while one is active. */
 export function useCooldownSeconds(): number {
   const until = useChat(selectRateLimitedUntil);
   const [now, setNow] = useState(() => Date.now());

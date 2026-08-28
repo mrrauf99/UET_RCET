@@ -1,10 +1,6 @@
 import "server-only";
 
-/*
- * In-memory limiter: counts are per server instance and reset on cold starts, so on serverless or
- * multi-instance hosting it is not real protection. Production should use a shared store such as
- * @upstash/ratelimit with Upstash Redis, or a platform WAF rule.
- */
+// Limits reset on cold starts and are per instance; production needs a shared limiter or WAF.
 
 export const RATE_LIMIT = { requests: 20, windowMs: 60_000, concurrent: 2 } as const;
 const SWEEP_EVERY_MS = 30_000;
@@ -17,11 +13,7 @@ interface Bucket {
 const buckets = new Map<string, Bucket>();
 let lastSweep = 0;
 
-/*
- * The first x-forwarded-for entry is client-controlled, so the IP is read from one header that a
- * trusted proxy overwrites. Vercel sets x-real-ip itself; behind nginx use
- * `proxy_set_header X-Real-IP $remote_addr;`.
- */
+// Trust only a proxy-overwritten IP header; x-forwarded-for may contain client-supplied values.
 export function getClientIp(headers: Headers): string {
   const header = process.env.RACHNA_GPT_IP_HEADER ?? "x-real-ip";
   return headers.get(header)?.trim() || "unknown";

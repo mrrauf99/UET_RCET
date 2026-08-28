@@ -12,18 +12,23 @@ const linkClass = "text-link underline underline-offset-2";
 
 // Answers are plain text; contacts and URLs become links. Built as elements, never as HTML.
 function Linkified({ text }: { text: string }) {
+  // Character offsets preserve link identity during streaming, including repeated URLs.
+  let offset = 0;
   return text.split(LINKS).map((part, index) => {
-    if (index % 2 === 0) return <Fragment key={index}>{part}</Fragment>;
+    const isText = index % 2 === 0;
+    const key = `${isText ? "text" : "link"}:${offset}`;
+    offset += part.length;
+    if (isText) return <Fragment key={key}>{part}</Fragment>;
     if (part.startsWith("http")) {
       return (
-        <a key={index} href={part} target="_blank" rel="noopener noreferrer" className={linkClass}>
+        <a key={key} href={part} target="_blank" rel="noopener noreferrer" className={linkClass}>
           {part}
         </a>
       );
     }
     const href = part.includes("@") ? `mailto:${part}` : `tel:${part}`;
     return (
-      <a key={index} href={href} className={linkClass}>
+      <a key={key} href={href} className={linkClass}>
         {part}
       </a>
     );

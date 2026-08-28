@@ -20,10 +20,7 @@ interface StreamHandlers {
 
 export const isAbortError = (error: unknown) => error instanceof DOMException && error.name === "AbortError";
 
-/*
- * The only module that knows the wire protocol. text/plain cannot signal a truncated stream; moving to
- * NDJSON/SSE events (delta, done, error) only changes this file and the route.
- */
+// The plain-text protocol cannot distinguish a truncated stream from normal completion.
 export async function streamChat(body: ChatRequest, { signal, onChatId, onChunk }: StreamHandlers): Promise<void> {
   let response: Response;
   try {
@@ -54,6 +51,7 @@ export async function streamChat(body: ChatRequest, { signal, onChatId, onChunk 
   const decoder = new TextDecoder("utf-8");
   try {
     for (;;) {
+      // oxlint-disable-next-line no-await-in-loop -- decode and deliver stream chunks in order
       const { done, value } = await reader.read();
       if (done) break;
       const text = decoder.decode(value, { stream: true });

@@ -2,8 +2,8 @@ import { LIMITS } from "./constants";
 import type { Message, RequestMessage } from "./types";
 
 /**
- * The only place request history is shaped. Sends completed question/answer pairs plus the
- * pending question; failed, stopped and empty replies are dropped together with their question.
+ * Drop failed, stopped and empty replies with their questions to keep history in complete pairs.
+ * The pending question is always retained.
  */
 export function toRequestMessages(messages: readonly Message[]): RequestMessage[] {
   const last = messages.at(-1);
