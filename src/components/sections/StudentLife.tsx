@@ -4,6 +4,7 @@ import { LinkButton } from "@/components/ui/LinkButton";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { cn } from "@/lib/cn";
 import type { ImageAsset, StudentSociety } from "@/types/content";
+import { StudentSocietyList } from "./StudentSocietyList";
 
 interface StudentLifeProps {
   societies: readonly StudentSociety[];
@@ -48,14 +49,7 @@ export function StudentLife({ societies, photos }: StudentLifeProps) {
             ))}
           </ul>
         ) : null}
-        <ol className="mt-10 grid gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
-          {sorted.map((society) => (
-            <li key={society.id} className="flex items-baseline justify-between gap-4 border-b border-border py-4">
-              <span className="font-bold">{society.name}</span>
-              <span className="shrink-0 text-sm text-fg-muted tabular-nums">Since {society.foundedYear}</span>
-            </li>
-          ))}
-        </ol>
+        <StudentSocietyList societies={sorted} as="ol" className="mt-10" />
       </Container>
     </section>
   );

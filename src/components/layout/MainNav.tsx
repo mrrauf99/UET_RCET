@@ -35,7 +35,6 @@ export function MainNav({ items }: MainNavProps) {
       setOpenId(null);
       navRef.current?.querySelector<HTMLButtonElement>(`[aria-controls="nav-group-${openId}"]`)?.focus();
     };
-    // Close when a pointer or keyboard focus moves outside the navigation.
     const onOutside = (event: Event) => {
       if (!navRef.current?.contains(event.target as Node)) setOpenId(null);
     };

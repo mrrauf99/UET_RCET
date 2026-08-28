@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { PageSection, PageShell } from "@/components/layout/PageShell";
+import { StudentSocietyList } from "@/components/sections/StudentSocietyList";
 import { getDepartments, getFacilities, getImage, getStudentSocieties } from "@/lib/content";
 import { capitalize, shortDepartmentName } from "@/lib/format";
 import type { Facility, ImageAsset } from "@/types/content";
@@ -16,7 +17,6 @@ const SPORT_IDS = ["cricket-ground", "football-field", "basketball-court", "badm
 
 type Photos = ReadonlyMap<string, ImageAsset>;
 
-/** Facilities with a usable photo get a picture card; the rest stay a compact list. */
 function FacilityGrid({ items, photos }: { items: readonly Facility[]; photos: Photos }) {
   const withPhoto = items.filter((item) => photos.has(item.id));
   const withoutPhoto = items.filter((item) => !photos.has(item.id));
@@ -98,14 +98,7 @@ export default async function FacilitiesPage() {
         </div>
       </PageSection>
       <PageSection id="societies" title="Student societies">
-        <ul className="grid gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
-          {societies.map((society) => (
-            <li key={society.id} className="flex items-baseline justify-between gap-4 border-b border-border py-4">
-              <span className="font-bold">{society.name}</span>
-              <span className="shrink-0 text-sm text-fg-muted tabular-nums">Since {society.foundedYear}</span>
-            </li>
-          ))}
-        </ul>
+        <StudentSocietyList societies={societies} />
       </PageSection>
     </PageShell>
   );

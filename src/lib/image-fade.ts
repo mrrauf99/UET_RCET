@@ -1,8 +1,6 @@
 /**
- * Fades lazy images in as they finish loading. A capture listener installed before first paint catches every
- * image (server-rendered or added by navigation) without a client component, and it never hides anything:
- * if it doesn't run, or motion is reduced, images simply appear. Eager (preloaded) images are skipped so
- * the hero and banners aren't delayed as LCP candidates.
+ * A pre-paint capture listener covers lazy images across navigation without a client component.
+ * Images remain visible if it fails; eager images skip animation to avoid delaying LCP.
  */
 function fadeInLoadedImages() {
   const root = document.documentElement;

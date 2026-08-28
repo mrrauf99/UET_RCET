@@ -31,7 +31,6 @@ export function CoordinatorMessage({ message, portrait }: CoordinatorMessageProp
           </blockquote>
           <figcaption className="mt-8 flex items-center gap-4 border-t border-on-band/25 pt-6">
             {portrait?.approvedLocalPath ? (
-              // The name is printed beside the portrait, so the image itself is decorative.
               <Image
                 src={portrait.approvedLocalPath}
                 alt=""

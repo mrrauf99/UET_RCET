@@ -1,4 +1,4 @@
-import type { Department, Faculty, Program } from "../types/content";
+import type { Department, Program } from "../types/content";
 
 export const departments = [
   {
@@ -82,50 +82,6 @@ export const departments = [
     }
   }
 ] satisfies readonly Department[];
-
-export const faculties = [
-  {
-    "id": "faculty-of-electrical-engineering",
-    "name": "Faculty of Electrical Engineering",
-    "departmentIds": [
-      "computer-science",
-      "electrical-engineering"
-    ],
-    "source": {
-      "sourceUrl": "https://rcet.uet.edu.pk/",
-      "checkedAt": "2026-10-02",
-      "status": "observed",
-      "notes": []
-    }
-  },
-  {
-    "id": "faculty-of-mechanical-engineering",
-    "name": "Faculty of Mechanical Engineering",
-    "departmentIds": [
-      "mechanical-engineering",
-      "industrial-manufacturing-engineering"
-    ],
-    "source": {
-      "sourceUrl": "https://rcet.uet.edu.pk/",
-      "checkedAt": "2026-10-02",
-      "status": "observed",
-      "notes": []
-    }
-  },
-  {
-    "id": "faculty-of-natural-sciences-humanities",
-    "name": "Faculty of Natural Sciences & Humanities",
-    "departmentIds": [
-      "natural-sciences-humanities"
-    ],
-    "source": {
-      "sourceUrl": "https://rcet.uet.edu.pk/",
-      "checkedAt": "2026-10-02",
-      "status": "observed",
-      "notes": []
-    }
-  }
-] satisfies readonly Faculty[];
 
 export const programs = [
   {

@@ -17,7 +17,6 @@ interface CardProps {
   href?: string;
   meta?: ReactNode;
   media?: CardMedia | null;
-  /** Shown in the media frame when no approved image exists. */
   placeholder?: ReactNode;
   ratio?: "4/3" | "16/9";
   children?: ReactNode;
@@ -70,7 +69,6 @@ export function Card({
           ) : (
             placeholder
           )}
-          {/* Grounds the photo against the card body so the edge reads as intentional. */}
           <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-band/35 to-transparent" />
         </div>
       ) : null}

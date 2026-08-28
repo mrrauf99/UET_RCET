@@ -12,10 +12,7 @@ interface SelectProps {
   onValueChange: (value: string) => void;
 }
 
-/**
- * Native <select>: no scroll locking, native keyboard and screen reader behaviour, and the OS picker on touch.
- * Browsers with customizable select (`appearance: base-select`) also get the styled list from globals.css.
- */
+/** Native keyboard and touch behavior; globals.css progressively enhances the picker. */
 export function Select({ id, value, options, onValueChange }: SelectProps) {
   return (
     <div className="relative">

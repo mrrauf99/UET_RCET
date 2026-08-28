@@ -21,7 +21,6 @@ export function PageShell({ title, lead, banner, contained = true, children }: P
         {banner ? (
           <div data-banner-photo aria-hidden="true" className="absolute inset-0 -z-10">
             <Image src={banner} alt="" fill preload quality={90} sizes="100vw" className="object-cover" />
-            {/* Dims the artwork's line work so the title keeps its contrast wherever it wraps. */}
             <div className="absolute inset-0 bg-band/35" />
           </div>
         ) : null}

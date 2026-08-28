@@ -1,5 +1,3 @@
-// Turns the extracted department-tab text (src/content/pages.ts) into structured blocks for rendering.
-
 const TAB_NAV = new Set(["Introduction", "Programs Offered", "Faculty", "Labs", "PLOs", "PEOs"]);
 
 type TabBlock = { id: string } & (

@@ -10,7 +10,8 @@ interface ProgramsProps {
 }
 
 export function Programs({ programs, departments }: ProgramsProps) {
-  const names = new Map(departments.map((department) => [department.id, shortDepartmentName(department.name)]));
+  const departmentOptions = departments.map(({ id, name }) => ({ id, name: shortDepartmentName(name) }));
+  const names = new Map(departmentOptions.map(({ id, name }) => [id, name]));
   const rows = programs.map(({ id, name, level, departmentId, duration }) => ({
     program: { id, name, level, departmentId, duration },
     departmentName: names.get(departmentId) ?? "",
@@ -24,7 +25,7 @@ export function Programs({ programs, departments }: ProgramsProps) {
           title="Programs"
           lead="Explore RCET’s listed undergraduate and postgraduate programs. Select a program to view its department; check current availability and eligibility on the UET portal."
         />
-        <ProgramFinder rows={rows} departments={departments.map((d) => ({ id: d.id, name: shortDepartmentName(d.name) }))} />
+        <ProgramFinder rows={rows} departments={departmentOptions} />
       </Container>
     </section>
   );

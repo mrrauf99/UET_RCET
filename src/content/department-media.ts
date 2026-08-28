@@ -1,4 +1,3 @@
-// Local RCET assets; unavailable department photography falls back to the girih pattern.
 export const departmentCardImages: Readonly<Record<string, string>> = {
   "computer-science": "image-134",
   "mechanical-engineering": "image-135",

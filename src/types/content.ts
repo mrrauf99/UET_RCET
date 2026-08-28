@@ -33,13 +33,6 @@ export interface ImageAsset {
   readonly approvedAlt: string | null;
 }
 
-export interface Faculty {
-  readonly id: string;
-  readonly name: string;
-  readonly departmentIds: readonly string[];
-  readonly source: ContentSource;
-}
-
 export interface Department {
   readonly id: string;
   readonly name: string;

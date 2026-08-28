@@ -2,7 +2,6 @@ import Image from "next/image";
 import type { Lab } from "@/lib/department-content";
 import type { ImageAsset } from "@/types/content";
 
-// Long inventories collapse so the grid stays scannable; the rest is one click away.
 const PREVIEW_COUNT = 5;
 
 export function LabList({ labs, photos }: { labs: readonly Lab[]; photos: ReadonlyMap<string, ImageAsset> }) {
@@ -27,7 +26,6 @@ export function LabList({ labs, photos }: { labs: readonly Lab[]; photos: Readon
                 />
               </div>
             ) : (
-              // Most labs have no approved photo yet; a brick rule keeps cards consistent without empty image boxes.
               <div aria-hidden="true" className="h-1 bg-accent" />
             )}
             <div className="flex flex-1 flex-col gap-3 p-6">

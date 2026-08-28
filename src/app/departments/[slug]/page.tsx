@@ -75,8 +75,7 @@ export default async function DepartmentPage({ params }: PageProps<"/departments
     : undefined;
   const plos = tab("plos")?.originalBody;
   const peoBody = tab("peos")?.originalBody;
-  // The source site's PEOs for some departments repeat PLO descriptions word for word; listing them
-  // again under "objectives" would duplicate and mislabel them (tracked as the peos-repeat-plos issue).
+  // Suppress source PEOs that repeat PLOs to avoid mislabeling learning outcomes as objectives.
   const peoTexts = peoBody
     ? parseTabBody(peoBody)
         .flatMap((block) => (block.kind === "table" ? block.rows.map((row) => row.at(-1) ?? "") : [block.text]))
@@ -102,7 +101,6 @@ export default async function DepartmentPage({ params }: PageProps<"/departments
           {chairman ? (
             <figure className="reveal surface grid gap-8 rounded-lg border border-border p-6 shadow-sm sm:p-10 md:grid-cols-[auto_1fr] md:items-start">
               {chairmanPhoto ? (
-                // The name is printed in the caption, so the portrait is decorative.
                 <Image
                   src={chairmanPhoto}
                   alt=""

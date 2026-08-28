@@ -38,7 +38,6 @@ const FACILITY_GROUPS = [
   },
 ] as const;
 
-// Curated from the old campus-life galleries: only photos that are sharp and clearly show student life.
 const STUDENT_LIFE_PHOTOS = ["image-023", "image-018", "image-019", "image-015"];
 
 export default async function HomePage() {

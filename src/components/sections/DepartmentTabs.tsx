@@ -10,7 +10,6 @@ export interface DepartmentTab {
   content: ReactNode;
 }
 
-// The URL hash is the single source of truth for the active tab.
 const localListeners = new Set<() => void>();
 
 function subscribeToHash(onChange: () => void) {
@@ -35,9 +34,8 @@ const readHash = () => decodeURIComponent(location.hash.slice(1));
 const serverHash = () => "";
 
 /**
- * WAI-ARIA tabs. Every panel is server-rendered and only toggled with `hidden`, so all content
- * stays in the HTML for search engines; the URL hash makes each tab linkable. Find-in-page only
- * searches the open tab: React 19 renders `hidden` as a boolean, so `hidden="until-found"` is unavailable.
+ * Keep panels in the server HTML for search engines and link tabs through the URL hash.
+ * React renders `hidden` as a boolean, so find-in-page can only search the open panel.
  */
 export function DepartmentTabs({ tabs, label }: { tabs: readonly DepartmentTab[]; label: string }) {
   const hash = useSyncExternalStore(subscribeToHash, readHash, serverHash);
@@ -119,7 +117,6 @@ export function DepartmentTabs({ tabs, label }: { tabs: readonly DepartmentTab[]
             aria-label={label}
             tabIndex={-1}
             onKeyDown={onKeyDown}
-            // Scrolls sideways on narrow screens; snapping keeps a tab from being cut in half.
             className="relative -mx-(--space-gutter) flex snap-x overflow-x-auto px-(--space-gutter) [scrollbar-width:none] lg:justify-center"
           >
             {tabs.map((tab) => {
@@ -139,7 +136,6 @@ export function DepartmentTabs({ tabs, label }: { tabs: readonly DepartmentTab[]
                   onClick={() => select(tab.id)}
                   className={cn(
                     "relative min-h-13 shrink-0 snap-start px-4 text-sm font-bold whitespace-nowrap transition-colors duration-(--dur-fast) sm:px-6 sm:text-base",
-                    // The bar under the active tab carries state without relying on colour alone.
                     "after:absolute after:inset-x-3 after:bottom-0 after:h-1 after:origin-center after:rounded-t-sm after:bg-accent after:transition-transform after:duration-(--dur-base) after:ease-(--ease-emphasized)",
                     selected
                       ? "text-on-band after:scale-x-100"
