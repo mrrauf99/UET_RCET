@@ -12,7 +12,6 @@ declare global {
 let loading: Promise<void> | null = null;
 let widget: unknown = null;
 
-/** The language the page is currently translated into, or null for the original English. */
 export function currentTranslation(): string | null {
   const match = document.cookie.match(/(?:^|;\s*)googtrans=\/en\/([^;]+)/);
   return match?.[1] && match[1] !== "en" ? decodeURIComponent(match[1]) : null;
@@ -89,12 +88,20 @@ async function languageSelect(): Promise<HTMLSelectElement> {
 }
 
 export async function translatePage(code: string) {
+  const language = code === "fil" ? "tl" : code.startsWith("en-") ? "en" : code;
+  if (language === "en") {
+    if (currentTranslation()) showOriginal();
+    return;
+  }
   // The widget reads this cookie on load, so it is written first and cleared if loading fails.
   writeCookie(`/en/${code}`);
   try {
     await loadWidget();
     const select = await languageSelect();
-    select.value = code;
+    if (![...select.options].some((option) => option.value === language)) {
+      throw new Error("This language is unavailable from the translation service");
+    }
+    select.value = language;
     select.dispatchEvent(new Event("change"));
   } catch (error) {
     writeCookie(null);
@@ -108,7 +115,6 @@ export function showOriginal() {
   location.reload();
 }
 
-/** Re-applies a saved translation after a full page load. */
 export function resumeTranslation() {
   const code = currentTranslation();
   if (code) void translatePage(code).catch(() => {});

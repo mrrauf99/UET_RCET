@@ -1,8 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { cn } from "@/lib/cn";
+import { useEffect, useRef, useState } from "react";
+import { Icon } from "@/components/ui/Icon";
+import { ToolbarIcon } from "./ToolbarIcon";
+import { LANGUAGES } from "@/lib/a11y/languages";
+import { PRESET_LABELS } from "@/lib/a11y/color-presets";
 import type { FocusSoundMode } from "@/lib/a11y/focus-sound";
+import type { SpeechOptions } from "@/lib/a11y/speech";
 import { COLOR_PRESETS, DEFAULT_PREFS, LETTER_SPACINGS, LINE_HEIGHTS, RULER_COLORS, RULER_SWATCHES, type A11yPrefs } from "@/lib/a11y/prefs";
 import { resolvedAttribute, updatePrefs } from "@/lib/a11y/store";
 import { currentTranslation, showOriginal, translatePage } from "@/lib/a11y/translate";
@@ -23,56 +27,73 @@ function set(update: Partial<A11yPrefs>, announce: Announce, message: string) {
 
 const onOff = (on: boolean) => (on ? "on" : "off");
 
+export function SpeechPanel({ enabled, options, movable, error, onToggle, onOptions, onMovable, onReset }: {
+  enabled: boolean; options: SpeechOptions; movable: boolean; error: string;
+  onToggle: () => void; onOptions: (options: SpeechOptions) => void; onMovable: (on: boolean) => void; onReset: () => void;
+}) {
+  return <div className="a11y-speech-controls">
+    <Switch label="Text To Speech (On/Off)" checked={enabled} onChange={onToggle} />
+    {enabled ? <>
+      <Switch label="Play Automatically" checked={options.autoPlay} onChange={(autoPlay) => onOptions({ ...options, autoPlay })} />
+      <Switch label="Read whole page of content" checked={options.wholePage} onChange={(wholePage) => onOptions({ ...options, wholePage })} />
+      <Switch label="Movable Player Controls" checked={movable} onChange={onMovable} />
+      <hr className="a11y-divider" />
+      <Choice legend="Voice" name="tts-voice" value={options.voice} options={[{ value: "male", label: "Male" }, { value: "female", label: "Female" }]} onChange={(voice) => onOptions({ ...options, voice })} />
+      <hr className="a11y-divider" />
+      <Stepper legend="Reading Speed:" valueLabel={String(options.rate)} canDecrease={options.rate > 0.5} canIncrease={options.rate < 2} decreaseLabel="Decrease playback speed" increaseLabel="Increase playback speed" onDecrease={() => onOptions({ ...options, rate: Math.max(0.5, Math.round((options.rate - 0.1) * 10) / 10) })} onIncrease={() => onOptions({ ...options, rate: Math.min(2, Math.round((options.rate + 0.1) * 10) / 10) })} />
+      <hr className="a11y-divider" />
+      <details className="a11y-speech-keyboard"><summary>Keyboard Controls</summary><p>Ctrl + Alt + Z: toggle Text to Speech.<br />Ctrl + Alt + P: play.<br />Ctrl + Alt + S: stop.<br />Ctrl + Right / Left: next / previous.<br />Ctrl + Shift + arrows: move floating controls.</p></details>
+      {error ? <p role="alert" className="text-sm">{error}</p> : null}
+    </> : null}
+    <hr className="a11y-divider" />
+    <ResetButton label="Reset Text to Speech Options to default" onClick={onReset} />
+  </div>;
+}
+
 export function FocusAudioPanel({
   playing,
   mode,
   volume,
+  error,
   onToggle,
-  onMode,
+  onPlay,
   onVolume,
 }: {
   playing: boolean;
   mode: FocusSoundMode;
   volume: number;
+  error: string;
   onToggle: (on: boolean) => void;
-  onMode: (mode: FocusSoundMode) => void;
+  onPlay: (mode: FocusSoundMode) => void;
   onVolume: (volume: number) => void;
 }) {
   return (
-    <>
-      <Switch
-        label="Play focus sound"
-        description="Steady background sound that masks distractions while you read."
-        checked={playing}
-        onChange={onToggle}
-      />
-      <Choice
-        legend="Sound"
-        name="focus-sound-mode"
-        value={mode}
-        columns={2}
-        options={[
-          { value: "focus", label: "Focus" },
-          { value: "deeper", label: "Deeper reading" },
-        ]}
-        onChange={onMode}
-      />
-      <label className="flex flex-col gap-2 font-bold">
-        Volume
+    <div className="a11y-panel-controls">
+      <div className="a11y-audio-volume">
+        <button type="button" className="a11y-audio-toggle" aria-label={playing ? "Pause focus audio" : "Resume focus audio"} aria-pressed={playing} onClick={() => onToggle(!playing)}>
+          <ToolbarIcon name={playing ? "speak" : "pause"} className="size-5" />
+        </button>
+        <label htmlFor="focus-audio-volume">Volume</label>
         <input
+          id="focus-audio-volume"
           type="range"
           min={0}
           max={100}
           step={5}
           value={Math.round(volume * 100)}
           onChange={(event) => onVolume(Number(event.target.value) / 100)}
-          className="h-11 w-full accent-(--tb-accent)"
+          className="min-w-0 flex-1 accent-(--tb-fg)"
         />
-      </label>
-    </>
+      </div>
+      {([{ value: "focus", label: "Focus" }, { value: "deeper", label: "Deeper Reading" }] as const).map((track) => (
+        <button key={track.value} type="button" className="a11y-audio-track" aria-pressed={playing && mode === track.value} onClick={() => playing && mode === track.value ? onToggle(false) : onPlay(track.value)}>
+          {track.label}<ToolbarIcon name={playing && mode === track.value ? "pause" : "play"} className="size-5" />
+        </button>
+      ))}
+      {error ? <p role="alert">{error}</p> : null}
+    </div>
   );
 }
-
 export function VoiceControlPanel({
   supported,
   listening,
@@ -84,6 +105,7 @@ export function VoiceControlPanel({
   status: string;
   onToggle: (on: boolean) => void;
 }) {
+  const [showCommands, setShowCommands] = useState(false);
   if (!supported) {
     return (
       <p>
@@ -92,15 +114,16 @@ export function VoiceControlPanel({
     );
   }
   return (
-    <>
+    <div className="a11y-panel-controls">
       <Switch
-        label="Voice control"
+        label="Voice Control (On/Off)"
         description="Uses your microphone. Speech is processed by your browser’s speech service."
         checked={listening}
         onChange={onToggle}
       />
       {status ? <p className="rounded-md border-2 border-(--tb-border) p-3 text-sm">{status}</p> : null}
-      <div>
+      <Switch label="View all Commands" checked={showCommands} onChange={setShowCommands} />
+      {showCommands ? <div>
         <h3 className="font-bold">Commands</h3>
         <dl className="mt-2 divide-y divide-(--tb-border) text-sm">
           {VOICE_COMMANDS.map((command) => (
@@ -110,16 +133,22 @@ export function VoiceControlPanel({
             </div>
           ))}
         </dl>
-      </div>
-    </>
+      </div> : null}
+    </div>
   );
 }
 
 const FONT_OPTIONS = [
-  { value: "default", label: "Default", style: undefined },
+  { value: "default", label: "Default Font", style: undefined },
+  { value: "lexend", label: "Lexend", style: "var(--font-lexend), Verdana, Arial, sans-serif" },
   { value: "arial", label: "Arial", style: "Arial, sans-serif" },
   { value: "verdana", label: "Verdana", style: "Verdana, sans-serif" },
+  { value: "comic-sans", label: "Comic Sans MS", style: '"Comic Sans MS", cursive' },
   { value: "georgia", label: "Georgia", style: "Georgia, serif" },
+  { value: "tahoma", label: "Tahoma", style: "Tahoma, Verdana, sans-serif" },
+  { value: "lato", label: "Lato", style: "var(--font-lato), Arial, sans-serif" },
+  { value: "trebuchet", label: "Trebuchet", style: '"Trebuchet MS", sans-serif' },
+  { value: "open-dyslexic", label: "Open Dyslexic", style: '"Open Dyslexic", Verdana, sans-serif' },
 ] as const;
 
 export function FontPanel({ prefs, announce }: PrefsPanelProps) {
@@ -128,7 +157,7 @@ export function FontPanel({ prefs, announce }: PrefsPanelProps) {
   return (
     <>
       <Stepper
-        legend="Line height"
+        legend="Line Height"
         valueLabel={prefs.lineHeight ? `${prefs.lineHeight}×` : "Default"}
         canDecrease={lineIndex > 0}
         canIncrease={lineIndex < LINE_HEIGHTS.length - 1}
@@ -138,7 +167,7 @@ export function FontPanel({ prefs, announce }: PrefsPanelProps) {
         onIncrease={() => set({ lineHeight: LINE_HEIGHTS[lineIndex + 1] }, announce, "Line spacing increased")}
       />
       <Stepper
-        legend="Character spacing"
+        legend="Character Spacing"
         valueLabel={prefs.letterSpacing ? `+${prefs.letterSpacing}em` : "Default"}
         canDecrease={spacingIndex > 0}
         canIncrease={spacingIndex < LETTER_SPACINGS.length - 1}
@@ -149,14 +178,15 @@ export function FontPanel({ prefs, announce }: PrefsPanelProps) {
           set({ letterSpacing: LETTER_SPACINGS[spacingIndex + 1] }, announce, "Character spacing increased")
         }
       />
-      <fieldset>
-        <legend className="mb-2 font-bold">Select font</legend>
+      <hr className="a11y-divider" />
+      <fieldset className="a11y-font-list">
+        <legend className="mb-2 font-bold">Select Font</legend>
         <div className="flex flex-col gap-2">
           {FONT_OPTIONS.map((font) => (
             <label
               key={font.value}
               style={{ fontFamily: font.style }}
-              className="flex min-h-11 cursor-pointer items-center justify-center rounded-full border-2 border-(--tb-border) has-checked:border-(--tb-accent) has-checked:bg-(--tb-accent) has-checked:text-(--tb-on-accent) has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-(--tb-focus)"
+              className="a11y-font-option flex min-h-11 cursor-pointer items-center justify-center rounded-full border border-(--tb-border) has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-(--tb-focus)"
             >
               <input
                 type="radio"
@@ -185,28 +215,14 @@ export function FontPanel({ prefs, announce }: PrefsPanelProps) {
   );
 }
 
-const LANGUAGES = [
-  { code: "ur", name: "Urdu", native: "اردو" },
-  { code: "pa", name: "Punjabi", native: "ਪੰਜਾਬੀ" },
-  { code: "ar", name: "Arabic", native: "العربية" },
-  { code: "zh-CN", name: "Chinese (Simplified)", native: "简体中文" },
-  { code: "hi", name: "Hindi", native: "हिन्दी" },
-  { code: "ps", name: "Pashto", native: "پښتو" },
-  { code: "sd", name: "Sindhi", native: "سنڌي" },
-  { code: "fa", name: "Persian", native: "فارسی" },
-  { code: "tr", name: "Turkish", native: "Türkçe" },
-  { code: "fr", name: "French", native: "Français" },
-  { code: "de", name: "German", native: "Deutsch" },
-  { code: "es", name: "Spanish", native: "Español" },
-] as const;
-
 export function TranslationPanel({ announce }: { announce: Announce }) {
   const [query, setQuery] = useState("");
   // Panels render only in the browser (the toolbar is closed during server rendering).
   const [active, setActive] = useState(currentTranslation);
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState("");
-  const visible = LANGUAGES.filter((language) =>
+  const searchRef = useRef<HTMLInputElement>(null);
+  const visible = LANGUAGES.toSorted((a, b) => a.name.localeCompare(b.name)).filter((language) =>
     `${language.name} ${language.native}`.toLowerCase().includes(query.toLowerCase()),
   );
 
@@ -226,165 +242,156 @@ export function TranslationPanel({ announce }: { announce: Announce }) {
   };
 
   return (
-    <>
-      <p className="text-sm text-(--tb-muted)">
-        Translates this page with Google Translate. Machine translation can contain errors.
-      </p>
-      {active ? (
-        <ResetButton label="Show original (English)" onClick={showOriginal} />
-      ) : null}
+    <div className="a11y-translation-controls">
+      <button type="button" className="a11y-panel-reset" aria-label="Reset translation to original English" aria-disabled={pending !== null || undefined} onClick={() => {
+        if (pending) return;
+        if (active) showOriginal();
+        else {
+          setQuery("");
+          setError("");
+          announce("Original English selected");
+        }
+      }}>Reset to default</button>
       {error ? (
         <p role="alert" className="rounded-md border-2 border-(--tb-accent) p-3 text-sm">
           {error}
         </p>
       ) : null}
-      <label className="flex flex-col gap-2 font-bold">
-        Search languages
+      <label className="a11y-language-search">
+        <span className="sr-only">Search languages</span>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="size-5 shrink-0"><circle cx="10" cy="10" r="6" /><path d="m15 15 5 5" /></svg>
         <input
+          ref={searchRef}
           type="search"
+          placeholder={`Search ${LANGUAGES.length} Languages`}
+          autoComplete="off"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          className="min-h-11 rounded-full border-2 border-(--tb-border) bg-(--tb-bg) px-4 font-normal"
         />
       </label>
-      <ul className="flex max-h-72 flex-col overflow-y-auto">
+      <output aria-live="polite" className="sr-only">{visible.length} languages found</output>
+      <ul className="a11y-language-list" aria-label="Languages">
         {visible.map((language) => (
           <li key={language.code}>
             <button
               type="button"
               aria-pressed={active === language.code}
+              aria-label={`${language.name} (${language.native})`}
               aria-busy={pending === language.code || undefined}
               // aria-disabled keeps keyboard focus on the button; disabled would drop it to <body>.
               aria-disabled={pending !== null || undefined}
               onClick={() => choose(language)}
-              className="flex min-h-11 w-full items-center justify-between gap-3 rounded-sm px-2 text-start hover:bg-(--tb-hover) aria-pressed:bg-(--tb-accent) aria-pressed:text-(--tb-on-accent) aria-disabled:cursor-wait"
+              className="a11y-language-option"
             >
-              <span className="font-bold">{language.name}</span>
+              <span className="flex min-w-0 flex-col gap-1">
+                <span>{language.name}</span>
+                <span lang={language.code} dir="auto" className="text-sm">{language.native}</span>
+              </span>
               {pending === language.code ? (
-                <span className="opacity-80">Translating…</span>
-              ) : (
-                <span lang={language.code} className="opacity-80">
-                  {language.native}
-                </span>
-              )}
+                <span className="text-sm">Translating…</span>
+              ) : active === language.code ? <Icon name="check" /> : null}
             </button>
           </li>
         ))}
         {visible.length === 0 ? <li className="py-2 text-sm">No language matches “{query}”.</li> : null}
       </ul>
-    </>
+      <button type="button" className="a11y-language-top" onClick={() => {
+        searchRef.current?.closest<HTMLElement>("[data-panel]")?.scrollTo({ top: 0 });
+        searchRef.current?.focus({ preventScroll: true });
+      }}><Icon name="send" className="size-4" />Back to top</button>
+      <p className="text-sm text-(--tb-muted)">Translated with Google Translate. Machine translation can contain errors.</p>
+    </div>
   );
 }
 
-const PRESET_LABELS: Record<(typeof COLOR_PRESETS)[number], { name: string; bg: string; fg: string }> = {
-  none: { name: "Site colours", bg: "#ffffff", fg: "#0a1f55" },
-  "black-white": { name: "Black background, white text", bg: "#000000", fg: "#ffffff" },
-  "black-yellow": { name: "Black background, yellow text", bg: "#000000", fg: "#ffff00" },
-  "blue-yellow": { name: "Blue background, yellow text", bg: "#002b80", fg: "#ffff00" },
-  "cream-black": { name: "Cream background, black text", bg: "#fff6d9", fg: "#000000" },
-  "yellow-black": { name: "Yellow background, black text", bg: "#ffff00", fg: "#000000" },
-  "white-blue": { name: "White background, blue text", bg: "#ffffff", fg: "#0a2a9e" },
-};
-
 export function ColourPanel({ prefs, announce }: PrefsPanelProps) {
-  const contrastOn = resolvedAttribute("data-contrast") === "more";
   return (
-    <>
-      <Choice
-        legend="Theme"
-        name="toolbar-theme"
-        value={prefs.theme}
-        options={[
-          { value: "system", label: "Device" },
-          { value: "light", label: "Light" },
-          { value: "dark", label: "Dark" },
-        ]}
-        onChange={(theme) => set({ theme }, announce, `Theme ${theme === "system" ? "follows your device" : theme}`)}
-      />
-      <Switch
-        label="High contrast"
-        checked={contrastOn}
-        onChange={(on) => set({ contrast: on ? "more" : "default" }, announce, `High contrast ${onOff(on)}`)}
-      />
-      <Switch
-        label="Monochrome"
-        checked={prefs.grayscale}
-        onChange={(on) => set({ grayscale: on }, announce, `Monochrome ${onOff(on)}`)}
-      />
-      <fieldset>
-        <legend className="mb-2 font-bold">Page background</legend>
-        <div className="grid grid-cols-4 gap-2">
-          {COLOR_PRESETS.map((preset) => {
-            const swatch = PRESET_LABELS[preset];
-            return (
-              <label
-                key={preset}
-                title={swatch.name}
-                style={{ backgroundColor: swatch.bg, color: swatch.fg }}
-                className="relative grid aspect-square min-h-11 cursor-pointer place-items-center rounded-md border-2 border-(--tb-border) font-display text-xl font-bold has-checked:outline-3 has-checked:outline-offset-2 has-checked:outline-(--tb-accent) has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-(--tb-focus)"
-              >
-                <input
-                  type="radio"
-                  name="toolbar-preset"
-                  value={preset}
-                  checked={prefs.colorPreset === preset}
-                  onChange={() => set({ colorPreset: preset }, announce, swatch.name)}
-                  aria-label={swatch.name}
-                  className="sr-only"
-                />
-                <span aria-hidden="true">A</span>
-              </label>
-            );
-          })}
-        </div>
-      </fieldset>
-      <ResetButton
-        label="Reset colours"
-        onClick={() =>
-          set(
-            { theme: DEFAULT_PREFS.theme, contrast: DEFAULT_PREFS.contrast, grayscale: false, colorPreset: "none" },
-            announce,
-            "Colours reset",
-          )
-        }
-      />
-    </>
+    <div className="a11y-colour-controls">
+      <label className="a11y-ruler-check">
+        Monochrome
+        <input type="checkbox" checked={prefs.grayscale} onChange={(event) => set({ grayscale: event.target.checked }, announce, `Monochrome ${onOff(event.target.checked)}`)} />
+      </label>
+      <div className="a11y-colour-background">
+        <h3>Page Background</h3>
+        {(["Dark", "Light"] as const).map((group) => (
+          <fieldset key={group}>
+            <legend>{group}</legend>
+            <div className="a11y-colour-swatches">
+              {COLOR_PRESETS.filter((preset): preset is Exclude<A11yPrefs["colorPreset"], "none"> => preset !== "none" && PRESET_LABELS[preset].group === group).map((preset) => {
+                const swatch = PRESET_LABELS[preset];
+                return (
+                  <label key={preset} title={swatch.name} data-tone={group.toLowerCase()} style={{ backgroundColor: swatch.bg, color: swatch.fg }}>
+                    <input type="radio" name="toolbar-preset" value={preset} checked={prefs.colorPreset === preset} onChange={() => set({ colorPreset: preset }, announce, swatch.name)} aria-label={swatch.name} className="sr-only" />
+                    <span aria-hidden="true">A</span>
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+        ))}
+      </div>
+      <button type="button" className="a11y-panel-reset" aria-label="Reset colour themes to default" onClick={() => set({ theme: DEFAULT_PREFS.theme, contrast: DEFAULT_PREFS.contrast, grayscale: false, colorPreset: "none" }, announce, "Colours reset")}>Reset to default</button>
+    </div>
   );
 }
 
 export function RulerPanel({ prefs, announce }: PrefsPanelProps) {
   return (
-    <>
-      <Switch
-        label="Reading ruler"
-        description="A bar that follows your pointer or keyboard focus. Press Alt with the up or down arrow to move it."
-        checked={prefs.readingGuide}
-        onChange={(on) => set({ readingGuide: on }, announce, `Reading ruler ${onOff(on)}`)}
-      />
-      <Choice
-        legend="Colour"
-        name="ruler-colour"
-        value={prefs.rulerColor}
-        columns={5}
-        swatches
-        options={RULER_COLORS.map((color) => ({
-          value: color,
-          ariaLabel: color,
-          label: <span aria-hidden="true" className="size-6 rounded-full border-2 border-white" style={{ backgroundColor: RULER_SWATCHES[color] }} />,
-        }))}
-        onChange={(rulerColor) => set({ rulerColor }, announce, `Ruler colour ${rulerColor}`)}
-      />
-      <Stepper
-        legend="Size"
-        valueLabel={String(prefs.rulerSize)}
-        canDecrease={prefs.rulerSize > 1}
-        canIncrease={prefs.rulerSize < 4}
-        decreaseLabel="Reduce ruler size"
-        increaseLabel="Increase ruler size"
-        onDecrease={() => set({ rulerSize: (prefs.rulerSize - 1) as A11yPrefs["rulerSize"] }, announce, "Ruler smaller")}
-        onIncrease={() => set({ rulerSize: (prefs.rulerSize + 1) as A11yPrefs["rulerSize"] }, announce, "Ruler larger")}
-      />
-    </>
+    <div className="a11y-ruler-controls">
+      <label className="a11y-ruler-check">
+        Ruler
+        <input type="checkbox" checked={prefs.readingGuide} onChange={(event) => set({ readingGuide: event.target.checked }, announce, `Reading ruler ${onOff(event.target.checked)}`)} />
+      </label>
+      {prefs.readingGuide ? (
+        <>
+          <label className="a11y-ruler-check">
+            Markings
+            <input type="checkbox" checked={prefs.rulerMarkings} onChange={(event) => set({ rulerMarkings: event.target.checked }, announce, `Ruler markings ${onOff(event.target.checked)}`)} />
+          </label>
+          <fieldset className="a11y-ruler-colours">
+            <legend>Select Colour</legend>
+            <div className="a11y-ruler-swatches">
+              {RULER_COLORS.map((color) => (
+                <label key={color} title={color} style={{ backgroundColor: RULER_SWATCHES[color] }}>
+                  <input type="radio" name="ruler-colour" aria-label={color} value={color} checked={prefs.rulerColor === color} onChange={() => set({ rulerColor: color }, announce, `Ruler colour ${color}`)} className="sr-only" />
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <div className="a11y-ruler-adjustments">
+            <Stepper
+              legend="Size"
+              valueLabel={String(prefs.rulerSize)}
+              canDecrease={prefs.rulerSize > 1}
+              canIncrease={prefs.rulerSize < 5}
+              decreaseLabel="Reduce ruler size"
+              increaseLabel="Increase ruler size"
+              onDecrease={() => set({ rulerSize: (prefs.rulerSize - 1) as A11yPrefs["rulerSize"] }, announce, "Ruler smaller")}
+              onIncrease={() => set({ rulerSize: (prefs.rulerSize + 1) as A11yPrefs["rulerSize"] }, announce, "Ruler larger")}
+            />
+            <Stepper
+              legend="Opacity Level"
+              valueLabel={`${prefs.rulerOpacity}%`}
+              canDecrease={prefs.rulerOpacity > 25}
+              canIncrease={prefs.rulerOpacity < 100}
+              decreaseLabel="Reduce ruler opacity"
+              increaseLabel="Increase ruler opacity"
+              onDecrease={() => set({ rulerOpacity: (prefs.rulerOpacity - 25) as A11yPrefs["rulerOpacity"] }, announce, "Ruler opacity reduced")}
+              onIncrease={() => set({ rulerOpacity: (prefs.rulerOpacity + 25) as A11yPrefs["rulerOpacity"] }, announce, "Ruler opacity increased")}
+            />
+          </div>
+          <hr className="a11y-divider" />
+          <div className="a11y-reading-controls">
+            <h3>Controls</h3>
+            <p>Move mouse or use your keyboard keys</p>
+            <p>Shift + Arrow keys (up &amp; down)</p>
+          </div>
+        </>
+      ) : null}
+      <button type="button" className="a11y-ruler-reset" onClick={() => set({ readingGuide: false, rulerMarkings: DEFAULT_PREFS.rulerMarkings, rulerColor: DEFAULT_PREFS.rulerColor, rulerSize: DEFAULT_PREFS.rulerSize, rulerOpacity: DEFAULT_PREFS.rulerOpacity }, announce, "Ruler reset to default")}>
+        Reset to default
+      </button>
+    </div>
   );
 }
 
@@ -392,165 +399,130 @@ export function CursorPanel({ prefs, announce }: PrefsPanelProps) {
   return (
     <>
       <Choice
-        legend="Cursor size"
+        legend="Cursor Size"
         name="cursor-size"
         value={prefs.cursor}
         options={[
-          { value: "default", label: "Default" },
+          { value: "small", label: "Small" },
+          { value: "medium", label: "Medium" },
           { value: "large", label: "Large" },
           { value: "x-large", label: "X-Large" },
         ]}
         onChange={(cursor) => set({ cursor }, announce, `Cursor ${cursor === "x-large" ? "extra large" : cursor}`)}
       />
+      <hr className="a11y-divider" />
       <Choice
-        legend="Cursor colour"
+        legend="Cursor Colour"
         name="cursor-colour"
         value={prefs.cursorColor}
-        columns={2}
         options={[
-          { value: "black", label: "Black" },
           { value: "white", label: "White" },
+          { value: "black", label: "Black" },
         ]}
         onChange={(cursorColor) => set({ cursorColor }, announce, `Cursor colour ${cursorColor}`)}
       />
+      <ResetButton label="Reset cursor to system default" onClick={() => set({ cursor: DEFAULT_PREFS.cursor, cursorColor: DEFAULT_PREFS.cursorColor }, announce, "Cursor reset to system default")} />
     </>
   );
 }
 
 export function MaskPanel({ prefs, announce }: PrefsPanelProps) {
+  const enabled = prefs.readingMask || prefs.maskVertical;
   return (
-    <>
-      <Switch
-        label="Screen mask"
-        description="Darkens the screen except for a clear band around what you are reading."
-        checked={prefs.readingMask}
-        onChange={(on) => set({ readingMask: on }, announce, `Screen mask ${onOff(on)}`)}
-      />
-      <Stepper
-        legend="Clear band height"
-        valueLabel={String(prefs.maskSize)}
-        canDecrease={prefs.maskSize > 1}
-        canIncrease={prefs.maskSize < 3}
-        decreaseLabel="Narrower band"
-        increaseLabel="Taller band"
-        onDecrease={() => set({ maskSize: (prefs.maskSize - 1) as A11yPrefs["maskSize"] }, announce, "Band narrower")}
-        onIncrease={() => set({ maskSize: (prefs.maskSize + 1) as A11yPrefs["maskSize"] }, announce, "Band taller")}
-      />
-    </>
+    <div className="a11y-mask-controls">
+      <Switch label="Horizontal" checked={prefs.readingMask} onChange={(on) => set({ readingMask: on }, announce, `Horizontal mask ${onOff(on)}`)} />
+      <Switch label="Vertical" checked={prefs.maskVertical} onChange={(on) => set({ maskVertical: on }, announce, `Vertical mask ${onOff(on)}`)} />
+      {enabled ? <>
+        <Switch label="Edge Colour" checked={prefs.maskEdge} onChange={(on) => set({ maskEdge: on }, announce, `Mask edge ${onOff(on)}`)} />
+        <fieldset className="a11y-ruler-colours">
+          <legend>Select Colour</legend>
+          <div className="a11y-ruler-swatches">
+            {RULER_COLORS.map((color) => <label key={color} title={color} style={{ backgroundColor: RULER_SWATCHES[color] }}>
+              <input type="radio" name="mask-colour" aria-label={color} checked={prefs.maskColor === color} onChange={() => set({ maskColor: color }, announce, `Mask colour ${color}`)} className="sr-only" />
+            </label>)}
+          </div>
+        </fieldset>
+        <hr className="a11y-divider" />
+        <Stepper legend="Size" valueLabel={String(prefs.maskSize)} canDecrease={prefs.maskSize > 1} canIncrease={prefs.maskSize < 5} decreaseLabel="Reduce screen mask window size" increaseLabel="Increase screen mask window size" onDecrease={() => set({ maskSize: (prefs.maskSize - 1) as A11yPrefs["maskSize"] }, announce, "Mask window smaller")} onIncrease={() => set({ maskSize: (prefs.maskSize + 1) as A11yPrefs["maskSize"] }, announce, "Mask window larger")} />
+        <Stepper legend="Opacity Level" valueLabel={`${prefs.maskOpacity}%`} canDecrease={prefs.maskOpacity > 25} canIncrease={prefs.maskOpacity < 100} decreaseLabel="Reduce mask opacity" increaseLabel="Increase mask opacity" onDecrease={() => set({ maskOpacity: (prefs.maskOpacity - 25) as A11yPrefs["maskOpacity"] }, announce, "Mask opacity reduced")} onIncrease={() => set({ maskOpacity: (prefs.maskOpacity + 25) as A11yPrefs["maskOpacity"] }, announce, "Mask opacity increased")} />
+        <hr className="a11y-divider" />
+        <div className="a11y-reading-controls">
+          <h3>Controls</h3>
+          <p>Move mouse or use your keyboard keys</p>
+          <p>Shift + Arrow keys ({prefs.readingMask && prefs.maskVertical ? "up, down, left & right" : prefs.maskVertical ? "left & right" : "up & down"})</p>
+        </div>
+      </> : null}
+      <ResetButton label="Reset screen mask to default" onClick={() => set({ readingMask: false, maskVertical: false, maskEdge: false, maskColor: DEFAULT_PREFS.maskColor, maskOpacity: DEFAULT_PREFS.maskOpacity, maskSize: DEFAULT_PREFS.maskSize }, announce, "Screen mask reset")} />
+    </div>
   );
 }
 
 export function PageOptionsPanel({ prefs, announce }: PrefsPanelProps) {
   const motionReduced = resolvedAttribute("data-motion") === "reduce";
   return (
-    <>
-      <Switch
-        label="Pause animations"
-        checked={motionReduced}
-        onChange={(on) => set({ motion: on ? "reduce" : "no-preference" }, announce, `Animations ${on ? "paused" : "on"}`)}
-      />
-      <Switch label="Hide images" checked={prefs.hideImages} onChange={(on) => set({ hideImages: on }, announce, `Images ${on ? "hidden" : "shown"}`)} />
-      <Switch
-        label="Highlight links"
-        checked={prefs.highlightLinks}
-        onChange={(on) => set({ highlightLinks: on }, announce, `Highlight links ${onOff(on)}`)}
-      />
-    </>
+    <div className="a11y-page-controls">
+      <div className="a11y-page-image-options">
+        <Switch label="Pause Animations and Video" checked={motionReduced} onChange={(on) => set({ motion: on ? "reduce" : "no-preference" }, announce, `Animations and video ${on ? "paused" : "on"}`)} />
+        <Switch label="Hide Images" checked={prefs.hideImages} onChange={(on) => set({ hideImages: on }, announce, `Images ${on ? "hidden" : "shown"}`)} />
+        <Switch label="View Image Description" checked={prefs.imageDescriptions} onChange={(on) => set({ imageDescriptions: on }, announce, `Image descriptions ${onOff(on)}`)} />
+      </div>
+      <hr className="a11y-divider" />
+      <Switch label="Plain Text Mode" checked={prefs.plainText} onChange={(on) => set({ plainText: on }, announce, `Plain text mode ${onOff(on)}`)} />
+      <hr className="a11y-divider" />
+      <ResetButton label="Reset page options to default" onClick={() => set({ motion: DEFAULT_PREFS.motion, hideImages: false, imageDescriptions: false, plainText: false }, announce, "Page options reset")} />
+    </div>
   );
 }
 
-interface Outline {
-  id: string;
-  label: string;
-  level: number;
+type StructureView = "headings" | "landmarks" | "links";
+interface Outline { id: string; label: string; badge: string; }
+
+function collectOutline(view: StructureView): Outline[] {
+  const selector = view === "headings" ? "h1, h2, h3, h4, h5, h6" : view === "links" ? "a[href]" : "header, nav, main, footer, aside, section[aria-labelledby], [role=banner], [role=navigation], [role=main], [role=contentinfo], [role=region]";
+  return [...document.querySelectorAll<HTMLElement>(selector)]
+    .filter((element) => !element.closest(".a11y-toolbar") && element.getClientRects().length > 0)
+    .map((element, index) => {
+      element.id ||= `outline-${view}-${index}`;
+      const labelledBy = element.getAttribute("aria-labelledby");
+      const label = element.getAttribute("aria-label") ?? (labelledBy ? labelledBy.split(/\s+/).map((id) => document.getElementById(id)?.textContent ?? "").join(" ") : null) ?? (view === "landmarks" ? element.getAttribute("role") ?? element.tagName.toLowerCase() : element.innerText || element.querySelector("img")?.alt || "");
+      return { id: element.id, label: label.trim().replace(/\s+/g, " "), badge: view === "headings" ? element.tagName : view === "links" ? "Link" : element.getAttribute("role") ?? element.tagName.toLowerCase() };
+    }).filter((item) => item.label);
 }
 
-function collectOutline(view: "headings" | "landmarks"): Outline[] {
-  const selector =
-    view === "headings" ? "main :is(h1, h2, h3)" : "header, nav[aria-label], main, footer, section[aria-labelledby]";
-  const found = [...document.querySelectorAll<HTMLElement>(selector)].filter((element) => !element.closest(".a11y-toolbar"));
-  return found.map((element, index) => {
-    // Elements need an id so the outline can move focus to them.
-    element.id ||= `outline-${view}-${index}`;
-    const labelledBy = element.getAttribute("aria-labelledby");
-    const label =
-      view === "headings"
-        ? element.innerText
-        : (element.getAttribute("aria-label") ??
-          (labelledBy ? document.getElementById(labelledBy)?.innerText : null) ??
-          element.tagName.toLowerCase());
-    return { id: element.id, label: label.trim().replace(/\s+/g, " "), level: view === "headings" ? Number(element.tagName[1]) : 1 };
-  });
-}
-
-export function PageStructurePanel({ onNavigate }: { onNavigate: () => void }) {
-  const [view, setView] = useState<"headings" | "landmarks">("headings");
+export function PageStructurePanel() {
+  const [view, setView] = useState<StructureView>("headings");
   const [items, setItems] = useState<Outline[]>(() => collectOutline("headings"));
-
+  const [activeId, setActiveId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!activeId) return;
+    const element = document.getElementById(activeId);
+    element?.setAttribute("data-structure-active", "true");
+    return () => element?.removeAttribute("data-structure-active");
+  }, [activeId]);
   const go = (id: string) => {
     const element = document.getElementById(id);
     if (!element) return;
-    if (!element.hasAttribute("tabindex")) element.setAttribute("tabindex", "-1");
-    onNavigate();
-    element.focus();
+    setActiveId(id);
+    element.scrollIntoView({ block: "center", behavior: "instant" });
   };
-
-  return (
-    <>
-      <Choice
-        legend="Show"
-        name="structure-view"
-        value={view}
-        columns={2}
-        options={[
-          { value: "headings", label: "Headings" },
-          { value: "landmarks", label: "Regions" },
-        ]}
-        onChange={(next) => {
-          setView(next);
-          setItems(collectOutline(next));
-        }}
-      />
-      <ul className="flex max-h-80 flex-col overflow-y-auto">
-        {items.map((item) => (
-          <li key={item.id}>
-            <button
-              type="button"
-              onClick={() => go(item.id)}
-              className={cn(
-                "flex min-h-11 w-full items-center rounded-sm px-2 text-start hover:bg-(--tb-hover)",
-                item.level === 1 && "font-bold",
-                item.level === 3 && "ps-6 text-sm",
-              )}
-            >
-              {item.label}
-            </button>
-          </li>
-        ))}
+  return <>
+    <div className="a11y-structure-rule" />
+    <p className="a11y-structure-description">Provides an overview of the webpage's layout by displaying key elements such as headings, landmarks, and links.</p>
+    <div className="a11y-structure-tabs" role="tablist" aria-label="Page structure">
+      {(["headings", "landmarks", "links"] as const).map((tab) => <button type="button" key={tab} id={`structure-tab-${tab}`} role="tab" aria-selected={view === tab} aria-controls="structure-content" tabIndex={view === tab ? 0 : -1} onClick={() => { setView(tab); setItems(collectOutline(tab)); }} onKeyDown={(event) => {
+        const tabs = ["headings", "landmarks", "links"] as const;
+        if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+        event.preventDefault();
+        const index = event.key === "Home" ? 0 : event.key === "End" ? 2 : (tabs.indexOf(tab) + (event.key === "ArrowRight" ? 1 : 2)) % 3;
+        const next = tabs[index];
+        setView(next); setItems(collectOutline(next)); document.getElementById(`structure-tab-${next}`)?.focus();
+      }}>{tab[0].toUpperCase() + tab.slice(1)}</button>)}
+    </div>
+    <div id="structure-content" role="tabpanel" aria-labelledby={`structure-tab-${view}`}>
+      <ul className="a11y-structure-list">
+        {items.map((item) => <li key={item.id}><span className="a11y-structure-badge" aria-hidden="true">{item.badge}</span><button type="button" onClick={() => go(item.id)} aria-current={activeId === item.id ? "location" : undefined} aria-label={`${item.badge}: ${item.label}`}>{item.label}</button></li>)}
       </ul>
-    </>
-  );
-}
-
-export function HelpPanel() {
-  return (
-    <dl className="flex flex-col gap-3 text-sm">
-      <div>
-        <dt className="font-bold">Move between tools</dt>
-        <dd className="text-(--tb-muted)">Left and right arrow keys, Home and End.</dd>
-      </div>
-      <div>
-        <dt className="font-bold">Open or close a tool</dt>
-        <dd className="text-(--tb-muted)">Enter or Space. Escape closes the open panel.</dd>
-      </div>
-      <div>
-        <dt className="font-bold">Read aloud</dt>
-        <dd className="text-(--tb-muted)">Turn on Read aloud, then select any paragraph to start from it.</dd>
-      </div>
-      <div>
-        <dt className="font-bold">Saved settings</dt>
-        <dd className="text-(--tb-muted)">Your choices are stored on this device only and apply on every page.</dd>
-      </div>
-    </dl>
-  );
+      {!items.length ? <p>No {view} found on this page.</p> : null}
+    </div>
+  </>;
 }

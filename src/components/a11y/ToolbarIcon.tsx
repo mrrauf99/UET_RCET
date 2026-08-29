@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 
-// In-house icons on a 24px grid.
 const icons = {
   speak: (
     <>
@@ -93,8 +92,8 @@ const icons = {
       <path d="M18 6v12" />
     </>
   ),
-  rewind: <path d="M12 6l-8 6 8 6zM21 6l-8 6 8 6z" />,
-  forward: <path d="M3 6l8 6-8 6zM12 6l8 6-8 6z" />,
+  rewind: <path d="M4 8v6h6M4 14a9 9 0 0 1 16-3" />,
+  forward: <path d="M20 8v6h-6M20 14a9 9 0 0 0-16-3" />,
   grip: (
     <>
       <circle cx="9" cy="6" r="1.5" />
@@ -111,7 +110,7 @@ const icons = {
 
 export type ToolbarIconName = keyof typeof icons;
 
-const filled = new Set<ToolbarIconName>(["play", "pause", "skip-back", "skip-forward", "rewind", "forward", "grip"]);
+const filled = new Set<ToolbarIconName>(["play", "pause", "skip-back", "skip-forward", "grip"]);
 
 export function ToolbarIcon({ name, className = "size-6" }: { name: ToolbarIconName; className?: string }) {
   return (

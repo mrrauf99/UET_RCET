@@ -50,7 +50,6 @@ function moveFocus(step: 1 | -1) {
   items[(index + step + items.length) % items.length]?.focus();
 }
 
-/** Runs a spoken command; returns a short description for the live region. */
 function runCommand(phrase: string, stopListening: () => void): string {
   const command = phrase.toLowerCase().trim().replace(/[.!?]$/, "");
   if (command.includes("stop listening")) {

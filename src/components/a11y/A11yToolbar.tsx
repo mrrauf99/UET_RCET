@@ -4,7 +4,7 @@ import { useEffect, useEffectEvent, useId, useRef, useState, type CSSProperties,
 import { cn } from "@/lib/cn";
 import { FocusSound, type FocusSoundMode } from "@/lib/a11y/focus-sound";
 import { TEXT_SCALES } from "@/lib/a11y/prefs";
-import { isSpeechSupported, useTextToSpeech } from "@/lib/a11y/speech";
+import { DEFAULT_SPEECH_OPTIONS, isSpeechSupported, useTextToSpeech } from "@/lib/a11y/speech";
 import { closeToolbar, resetPrefs, updatePrefs, useA11yState } from "@/lib/a11y/store";
 import { isVoiceControlSupported, startVoiceControl } from "@/lib/a11y/voice-control";
 import { ToolbarIcon, type ToolbarIconName } from "./ToolbarIcon";
@@ -13,11 +13,11 @@ import {
   CursorPanel,
   FocusAudioPanel,
   FontPanel,
-  HelpPanel,
   MaskPanel,
   PageOptionsPanel,
   PageStructurePanel,
   RulerPanel,
+  SpeechPanel,
   TranslationPanel,
   VoiceControlPanel,
 } from "./toolbar-panels";
@@ -33,20 +33,20 @@ type PanelId =
   | "mask"
   | "page"
   | "structure"
-  | "help";
+  | "speech";
 
 const PANEL_TITLES: Record<PanelId, string> = {
-  audio: "Focus audio",
-  voice: "Voice control",
-  font: "Font options",
+  audio: "Focus Audio",
+  voice: "Voice Control",
+  font: "Font Options",
   translate: "Translation",
-  colour: "Colour theme",
-  ruler: "Ruler options",
-  cursor: "Cursor options",
-  mask: "Screen mask",
-  page: "Page options",
-  structure: "Page structure",
-  help: "Help",
+  colour: "Colour Theme",
+  ruler: "Ruler Options",
+  cursor: "Cursor Options",
+  mask: "Screen Mask",
+  page: "Page Options",
+  structure: "Page Structure",
+  speech: "Text to Speech",
 };
 
 interface ToolButtonProps {
@@ -74,6 +74,8 @@ function ToolButton({ label, color, icon, text, pressed, active, expanded, contr
       type="button"
       data-tool
       data-label={label}
+      data-active={pressed || active || undefined}
+      data-expanded={expanded || undefined}
       aria-label={label}
       aria-pressed={pressed}
       aria-expanded={expanded}
@@ -84,9 +86,9 @@ function ToolButton({ label, color, icon, text, pressed, active, expanded, contr
       onFocus={onFocus}
       style={{ backgroundColor: `var(${color})`, "--tool-c": `var(${color})` } as CSSProperties}
       className={cn(
-        "relative grid size-11 shrink-0 place-items-center rounded-md text-(--tool-icon) transition-[filter,box-shadow] duration-(--dur-fast) hover:brightness-110 hover:shadow-[0_0_0_2px_var(--tb-bg),0_0_0_4px_var(--tool-c)] aria-disabled:opacity-55 lg:size-14",
-        // The underline is always rendered and scaled in, so hover can animate it; active tools keep it, so state is visible without relying on colour alone.
-        "after:absolute after:inset-x-3 after:-bottom-2 after:h-1 after:origin-left after:scale-x-0 after:rounded-full after:bg-(--tb-accent) after:transition-[scale] after:duration-(--dur-base) after:ease-(--ease-emphasized) hover:after:scale-x-100 focus-visible:after:scale-x-100 lg:after:inset-x-4",
+        "relative grid size-11 shrink-0 cursor-pointer place-items-center rounded-md text-(--tool-icon) aria-disabled:opacity-55 lg:size-14",
+        // Keep the underline mounted for animation and to indicate state without colour alone.
+        "after:absolute after:inset-x-3 after:-bottom-2 after:h-1 after:scale-x-0 after:rounded-full after:bg-(--tb-fg) after:transition-[scale] after:duration-(--dur-base) after:ease-(--ease-out) hover:after:scale-x-100 focus-visible:after:scale-x-100 lg:after:inset-x-4",
         highlighted && "after:scale-x-100",
       )}
     >
@@ -133,19 +135,17 @@ export function A11yToolbar() {
   const [edges, setEdges] = useState({ prev: false, next: false });
   const [message, setMessage] = useState("");
   const [ttsOn, setTtsOn] = useState(false);
+  const [speechOptions, setSpeechOptions] = useState(DEFAULT_SPEECH_OPTIONS);
+  const [movablePlayer, setMovablePlayer] = useState(false);
   const [focusSound, setFocusSound] = useState<{ playing: boolean; mode: FocusSoundMode; volume: number }>({
     playing: false,
     mode: "focus",
-    volume: 0.4,
+    volume: 1,
   });
+  const [soundError, setSoundError] = useState("");
   const [listening, setListening] = useState(false);
   const [voiceStatus, setVoiceStatus] = useState("");
   const [tip, setTip] = useState<{ label: string; x: number; y: number; above: boolean; shown: boolean; glide: boolean } | null>(null);
-  // Stays mounted so the label can fade out and glide between neighbouring controls.
-  const hideTip = () => {
-    spokenFor.current = null;
-    setTip((current) => (current?.shown ? { ...current, shown: false } : current));
-  };
   const [playerOffset, setPlayerOffset] = useState({ x: 0, y: 0 });
   const playerRef = useRef<HTMLFieldSetElement>(null);
   const playerDrag = useRef<{ pointerX: number; pointerY: number; offset: { x: number; y: number }; rect: DOMRect } | null>(null);
@@ -159,14 +159,18 @@ export function A11yToolbar() {
   const stopVoice = useRef<(() => void) | null>(null);
   const pointerInput = useRef(false);
   const spokenFor = useRef<HTMLElement | null>(null);
+  // Stays mounted so the label can fade out and glide between neighbouring controls.
+  const hideTip = () => {
+    spokenFor.current = null;
+    setTip((current) => (current?.shown ? { ...current, shown: false } : current));
+  };
   const panelId = useId();
-  const tts = useTextToSpeech();
+  const tts = useTextToSpeech(speechOptions);
 
   // The toolbar only renders in the browser (it is closed during server rendering), so capabilities can be read directly.
   const support = { speech: isSpeechSupported(), voice: isVoiceControlSupported() };
 
-  // Opening the toolbar moves focus to the first tool; browsers may still flag that as :focus-visible
-  // after a mouse or touch open, so focus labels follow the last real input instead.
+  // Programmatic focus can appear keyboard-driven after a pointer open; use the last real input for labels.
   useEffect(() => {
     const onPointer = () => (pointerInput.current = true);
     const onKey = () => (pointerInput.current = false);
@@ -201,12 +205,13 @@ export function A11yToolbar() {
     const more = { prev: row.scrollLeft > 1, next: row.scrollLeft + row.clientWidth < row.scrollWidth - 1 };
     setEdges((current) => (current.prev === more.prev && current.next === more.next ? current : more));
   };
+  const syncEdges = useEffectEvent(updateEdges);
   useEffect(() => {
     const row = toolbarRef.current;
     if (!row) return;
-    const observer = new ResizeObserver(updateEdges);
+    const observer = new ResizeObserver(() => syncEdges());
     observer.observe(row);
-    updateEdges();
+    syncEdges();
     return () => observer.disconnect();
   }, []);
   const page = (direction: 1 | -1) => {
@@ -237,6 +242,7 @@ export function A11yToolbar() {
     };
   }, [panel]);
 
+  const hideTipOnEscape = useEffectEvent(hideTip);
   const tipShown = tip?.shown ?? false;
   useEffect(() => {
     if (!tipShown) return;
@@ -244,7 +250,7 @@ export function A11yToolbar() {
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
       if (event.key !== "Escape") return;
       event.stopPropagation();
-      hideTip();
+      hideTipOnEscape();
     };
     document.addEventListener("keydown", onKeyDown, true);
     return () => document.removeEventListener("keydown", onKeyDown, true);
@@ -271,7 +277,6 @@ export function A11yToolbar() {
     let timer: number | undefined;
     const onOver = (event: PointerEvent) => {
       const target = event.target as Element;
-      // The toolbar speaks its own control labels; touch has no hover.
       if (event.pointerType === "touch" || barRef.current?.contains(target) || playerRef.current?.contains(target)) return;
       window.clearTimeout(timer);
       timer = window.setTimeout(() => readHovered(target), 150);
@@ -291,7 +296,6 @@ export function A11yToolbar() {
     if (ttsOn && spokenFor.current !== button) tts.say(button.dataset.label ?? "");
     spokenFor.current = button;
     const rect = button.getBoundingClientRect();
-    // Controls in the lower half (the floating player) label upwards so the tip stays on screen.
     const above = rect.top > innerHeight / 2;
     const x = Math.min(Math.max(rect.left + rect.width / 2, 72), innerWidth - 72);
     setTip((current) => ({
@@ -307,14 +311,14 @@ export function A11yToolbar() {
   const tipHandlers = {
     onPointerOver: (event: { target: EventTarget }) => showTip(event.target),
     onPointerLeave: (event: { relatedTarget: EventTarget | null }) => {
-      if (!tipRef.current?.contains(event.relatedTarget as Node | null)) hideTip();
+      if (!(event.relatedTarget instanceof Node) || !tipRef.current?.contains(event.relatedTarget)) hideTip();
     },
     onFocus: (event: { target: EventTarget }) => showTip(event.target, true),
     onBlur: () => hideTip(),
     onClick: () => hideTip(),
   };
 
-  // Clearing first makes a repeated message ("Line spacing increased" twice) a real DOM change, so it is spoken again.
+  // Clear first so repeated messages produce a live-region change.
   const announce = (text: string) => {
     setMessage("");
     requestAnimationFrame(() => setMessage(text));
@@ -325,10 +329,9 @@ export function A11yToolbar() {
     const bar = barRef.current?.getBoundingClientRect();
     if (button && bar) {
       const left = button.getBoundingClientRect().left - bar.left;
-      // The panel is min(20rem, 100vw - 1rem) wide and rem grows with the text-size setting.
-      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
-      const width = Math.min(20 * rem, innerWidth - rem);
-      setPanelLeft(Math.max(8, Math.min(left, bar.width - width - 8)));
+      const width = Math.min(300, innerWidth - 16);
+      const anchor = left + button.offsetWidth / 2 - width / 2;
+      setPanelLeft(Math.max(8, Math.min(anchor, bar.width - width - 8)));
     }
     setPanel((current) => (current === id ? null : id));
   };
@@ -344,15 +347,22 @@ export function A11yToolbar() {
   const toggleTts = () => {
     if (ttsOn) tts.reset();
     setTtsOn(!ttsOn);
-    announce(ttsOn ? "Read aloud off" : "Read aloud on. Select any paragraph or press play.");
+    announce(ttsOn ? "Text to speech off" : "Text to speech on. Select any paragraph or press play.");
   };
 
   const toggleSound = (on: boolean) => {
-    sound.current ??= new FocusSound();
+    sound.current ??= new FocusSound(onSoundPlayback);
+    setSoundError("");
     if (on) sound.current.start(focusSound.mode, focusSound.volume);
     else sound.current.stop();
-    setFocusSound({ ...focusSound, playing: on });
-    announce(`Focus sound ${on ? "on" : "off"}`);
+    setFocusSound({ ...focusSound, playing: false });
+    if (!on) announce("Focus sound off");
+  };
+
+  const onSoundPlayback = (playing: boolean, error: string) => {
+    setFocusSound((current) => ({ ...current, playing }));
+    setSoundError(error);
+    if (error) announce(error);
   };
 
   const toggleVoice = (on: boolean) => {
@@ -435,6 +445,7 @@ export function A11yToolbar() {
     if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
     const tools = [...(toolbarRef.current?.querySelectorAll<HTMLButtonElement>("[data-tool]") ?? [])];
     const current = tools.indexOf(document.activeElement as HTMLButtonElement);
+    if (current < 0) return;
     const next =
       event.key === "Home"
         ? 0
@@ -445,6 +456,28 @@ export function A11yToolbar() {
     tools[next]?.focus();
     tools[next]?.scrollIntoView({ inline: "nearest", block: "nearest" });
   };
+
+  const speechKey = useEffectEvent((event: globalThis.KeyboardEvent) => {
+    if (!support.speech || !event.ctrlKey || (event.target as Element).closest?.("input:not([type=checkbox]):not([type=radio]), textarea, select, [contenteditable=true]")) return;
+    const key = event.key.toLowerCase();
+    if (event.altKey && key === "z") { event.preventDefault(); toggleTts(); return; }
+    if (!ttsOn) return;
+    if (event.altKey && key === "p") { event.preventDefault(); if (!tts.playing) tts.togglePlay(); }
+    else if (event.altKey && key === "s") { event.preventDefault(); tts.pause(); }
+    else if (event.shiftKey && movablePlayer) {
+      const delta = { ArrowLeft: [-24, 0], ArrowRight: [24, 0], ArrowUp: [0, -24], ArrowDown: [0, 24] }[event.key];
+      const rect = playerRef.current?.getBoundingClientRect();
+      if (delta && rect) { event.preventDefault(); movePlayer(playerOffset, rect, delta[0], delta[1]); }
+    } else if (!event.altKey && !event.shiftKey && ["ArrowLeft", "ArrowRight"].includes(event.key)) {
+      event.preventDefault();
+      if (event.key === "ArrowRight") tts.nextBlock(); else tts.previousBlock();
+    }
+  });
+  useEffect(() => {
+    const handler = (event: globalThis.KeyboardEvent) => speechKey(event);
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
 
   let order = 0;
   const rove = () => {
@@ -466,10 +499,13 @@ export function A11yToolbar() {
         playing={focusSound.playing}
         mode={focusSound.mode}
         volume={focusSound.volume}
+        error={soundError}
         onToggle={toggleSound}
-        onMode={(mode) => {
-          setFocusSound({ ...focusSound, mode });
-          if (focusSound.playing) sound.current?.start(mode, focusSound.volume);
+        onPlay={(mode) => {
+          sound.current ??= new FocusSound(onSoundPlayback);
+          setSoundError("");
+          sound.current.start(mode, focusSound.volume);
+          setFocusSound({ ...focusSound, mode, playing: false });
         }}
         onVolume={(volume) => {
           setFocusSound({ ...focusSound, volume });
@@ -485,9 +521,25 @@ export function A11yToolbar() {
     cursor: <CursorPanel prefs={prefs} announce={announce} />,
     mask: <MaskPanel prefs={prefs} announce={announce} />,
     page: <PageOptionsPanel prefs={prefs} announce={announce} />,
-    structure: <PageStructurePanel onNavigate={() => setPanel(null)} />,
-    help: <HelpPanel />,
+    structure: <PageStructurePanel />,
+    speech: <SpeechPanel enabled={ttsOn} options={speechOptions} movable={movablePlayer} error={tts.error} onToggle={toggleTts} onOptions={setSpeechOptions} onMovable={(on) => { setMovablePlayer(on); setPlayerOffset({ x: 0, y: 0 }); }} onReset={() => {
+      tts.reset(); setTtsOn(false); setSpeechOptions(DEFAULT_SPEECH_OPTIONS); setMovablePlayer(false); setPlayerOffset({ x: 0, y: 0 }); announce("Text to speech reset");
+    }} />,
   };
+
+  const player = (
+    <fieldset ref={playerRef} data-tts-player data-movable={movablePlayer || undefined} {...tipHandlers}
+      style={movablePlayer ? { transform: `translate(${playerOffset.x}px, ${playerOffset.y}px)` } : undefined}
+      className={cn("a11y-tts-player", movablePlayer && "fixed bottom-4 left-4 z-[70]")}>
+      <legend className="sr-only">Text to Speech player controls</legend>
+      {movablePlayer ? <button type="button" aria-label="Move reading controls to the top or bottom (arrow keys also move them)" {...gripHandlers} className="grid size-10 cursor-grab touch-none place-items-center"><ToolbarIcon name="grip" /></button> : null}
+      <PlayerButton label="Back" icon="skip-back" onClick={tts.previousBlock} />
+      <PlayerButton label="Rewind 10 seconds" icon="rewind" onClick={tts.rewind} />
+      <PlayerButton label={tts.playing ? "Pause Text to Speech" : "Play Text to Speech"} icon={tts.playing ? "pause" : "play"} onClick={tts.togglePlay} />
+      <PlayerButton label="Fast Forward 10 seconds" icon="forward" onClick={tts.forward} />
+      <PlayerButton label="Next" icon="skip-forward" onClick={tts.nextBlock} />
+    </fieldset>
+  );
 
   return (
     <section
@@ -521,14 +573,16 @@ export function A11yToolbar() {
           className="a11y-tools flex min-w-0 flex-1 items-center gap-2 overflow-x-auto px-1 pt-2 pb-3 lg:gap-3"
         >
           <ToolButton
-            label={support.speech ? "Read aloud" : "Read aloud (not supported in this browser)"}
+            label={support.speech ? "Text to Speech" : "Text to Speech (not supported in this browser)"}
             icon="speak"
             color="--tool-listen"
-            pressed={ttsOn}
+            active={ttsOn}
             disabled={!support.speech}
-            onClick={() => support.speech && toggleTts()}
+            {...panelTool("speech")}
+            onClick={() => support.speech && togglePanel("speech")}
             {...rove()}
           />
+          {ttsOn && !movablePlayer ? player : null}
           <ToolButton label={focusSound.playing ? "Focus audio (on)" : "Focus audio"} icon="music" color="--tool-listen" active={focusSound.playing} {...panelTool("audio")} {...rove()} />
           <ToolButton label={listening ? "Voice control (on)" : "Voice control"} icon="mic" color="--tool-listen" active={listening} {...panelTool("voice")} {...rove()} />
 
@@ -565,17 +619,28 @@ export function A11yToolbar() {
           <ToolButton label="Colour theme" icon="palette" color="--tool-colour" {...panelTool("colour")} {...rove()} />
           <ToolButton label={prefs.readingGuide ? "Ruler options (on)" : "Ruler options"} icon="ruler" color="--tool-ruler" active={prefs.readingGuide} {...panelTool("ruler")} {...rove()} />
           <ToolButton label="Cursor options" icon="cursor" color="--tool-cursor" {...panelTool("cursor")} {...rove()} />
-          <ToolButton label={prefs.readingMask ? "Screen mask (on)" : "Screen mask"} icon="mask" color="--tool-mask" active={prefs.readingMask} {...panelTool("mask")} {...rove()} />
+          <ToolButton label={(prefs.readingMask || prefs.maskVertical) ? "Screen mask (on)" : "Screen mask"} icon="mask" color="--tool-mask" active={prefs.readingMask || prefs.maskVertical} {...panelTool("mask")} {...rove()} />
           <ToolButton label="Page options" icon="options" color="--tool-page" {...panelTool("page")} {...rove()} />
           <ToolButton label="Page structure" icon="structure" color="--tool-page" {...panelTool("structure")} {...rove()} />
 
-          <ToolButton label="Help" text="?" color="--tool-colour" {...panelTool("help")} {...rove()} />
           <ToolButton
             label="Reset all settings"
             icon="reset"
             color="--tool-colour"
             onClick={() => {
               resetPrefs();
+              tts.reset();
+              setTtsOn(false);
+              setSpeechOptions(DEFAULT_SPEECH_OPTIONS);
+              setMovablePlayer(false);
+              sound.current?.stop();
+              setFocusSound({ playing: false, mode: "focus", volume: 0.4 });
+              stopVoice.current?.();
+              stopVoice.current = null;
+              setListening(false);
+              setVoiceStatus("");
+              setPlayerOffset({ x: 0, y: 0 });
+              setPanel(null);
               announce("All settings reset");
             }}
             {...rove()}
@@ -588,21 +653,15 @@ export function A11yToolbar() {
           <section
             id={panelId}
             aria-labelledby={`${panelId}-title`}
+            data-panel={panel}
             style={{ left: panelLeft }}
-            className="pop-in absolute top-full mt-1 flex max-h-[calc(100dvh-var(--toolbar-offset)-1rem)] w-[min(20rem,calc(100vw-1rem))] flex-col gap-5 overflow-y-auto rounded-lg border-2 border-(--tb-border) bg-(--tb-bg) p-5 shadow-lg max-sm:!left-2"
+            className="a11y-panel pop-in absolute top-full z-[80] flex flex-col overflow-y-auto bg-(--tb-bg)"
           >
             <div className="flex items-center justify-between gap-3">
               <h2 id={`${panelId}-title`} className="text-xl">
                 {PANEL_TITLES[panel]}
               </h2>
-              <button
-                type="button"
-                aria-label={`Close ${PANEL_TITLES[panel]}`}
-                onClick={closePanel}
-                className="grid size-11 place-items-center rounded-sm hover:bg-(--tb-hover)"
-              >
-                <ToolbarIcon name="close" className="size-5" />
-              </button>
+              {panel === "structure" ? <button type="button" aria-label="Close Page Structure" onClick={closePanel} className="a11y-structure-close grid size-11 place-items-center rounded-full hover:bg-(--tb-hover)"><ToolbarIcon name="close" className="size-5" /></button> : null}
             </div>
             {panels[panel]}
           </section>
@@ -635,46 +694,7 @@ export function A11yToolbar() {
         </div>
       </div>
 
-      {ttsOn ? (
-        // Floats over the page so the toolbar layout never shifts when reading starts.
-        <fieldset
-          ref={playerRef}
-          {...tipHandlers}
-          // transform (not translate) so it composes with the centring translate utility.
-          style={{ transform: `translate(${playerOffset.x}px, ${playerOffset.y}px)` }}
-          // Wraps to two rows on the narrowest phones (and at large text) rather than running off screen.
-          className="rise-in fixed bottom-[calc(7.5rem+env(safe-area-inset-bottom))] left-3 flex max-w-[calc(100vw-1.5rem)] flex-wrap items-center justify-center gap-0.5 rounded-[1.75rem] border-2 border-(--tb-border) bg-(--tb-bg) p-1 shadow-lg sm:bottom-[calc(1rem+env(safe-area-inset-bottom))] sm:left-1/2 sm:-translate-x-1/2"
-        >
-          <legend className="sr-only">Read aloud controls</legend>
-          <button
-            type="button"
-            aria-label="Move reading controls to the top or bottom (arrow keys also move them)"
-            data-label="Drag or tap to move"
-            {...gripHandlers}
-            className="grid size-11 cursor-grab touch-none place-items-center rounded-full text-(--tb-muted) hover:bg-(--tb-hover) active:cursor-grabbing"
-          >
-            <ToolbarIcon name="grip" className="size-5" />
-          </button>
-          <PlayerButton label="Previous paragraph" icon="skip-back" onClick={tts.previousBlock} />
-          <PlayerButton label="Previous sentence" icon="rewind" onClick={tts.previousSentence} />
-          <button
-            type="button"
-            data-label={tts.playing ? "Pause reading" : "Play reading"}
-            aria-label={tts.playing ? "Pause reading" : "Play reading"}
-            onClick={() => {
-              announce(tts.playing ? "Reading paused" : "Reading");
-              tts.togglePlay();
-            }}
-            className="grid size-12 place-items-center rounded-full bg-(--tb-accent) text-(--tb-on-accent)"
-          >
-            <ToolbarIcon name={tts.playing ? "pause" : "play"} />
-          </button>
-          <PlayerButton label="Next sentence" icon="forward" onClick={tts.nextSentence} />
-          <PlayerButton label="Next paragraph" icon="skip-forward" onClick={tts.nextBlock} />
-          <span aria-hidden="true" className="mx-0.5 h-6 w-px bg-(--tb-border) max-sm:hidden" />
-          <PlayerButton label="Turn off read aloud" icon="close" onClick={toggleTts} />
-        </fieldset>
-      ) : null}
+      {ttsOn && movablePlayer ? player : null}
 
       {tip ? (
         // Visual only: every control already has the same text as its accessible name.
@@ -687,7 +707,7 @@ export function A11yToolbar() {
           data-glide={tip.glide}
           className={cn(
             // The ::before strip bridges the gap to the control so the pointer can move onto the label.
-            "a11y-tip fixed z-10 -translate-x-1/2 rounded-md border border-black/20 bg-white px-2.5 py-1.5 text-sm font-bold whitespace-nowrap text-black shadow-md before:absolute before:inset-x-0 before:h-2",
+            "a11y-tip fixed z-10 -translate-x-1/2 whitespace-nowrap before:absolute before:inset-x-0 before:h-2",
             tip.above ? "-translate-y-full before:-bottom-2" : "before:-top-2",
             !tip.shown && "pointer-events-none",
           )}

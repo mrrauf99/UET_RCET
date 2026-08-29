@@ -11,7 +11,6 @@ import { Wordmark } from "./Wordmark";
 interface SiteHeaderProps {
   navigation: readonly NavItem[];
   university: UniversityInfo;
-  /** Slot for the accessibility preferences trigger. */
   utilityActions?: ReactNode;
 }
 
@@ -27,7 +26,7 @@ export function SiteHeader({ navigation, university, utilityActions }: SiteHeade
     <>
       <div className="band border-b border-on-band/15 text-sm">
         <Container width="wide" className="flex min-h-11 items-center justify-between gap-4">
-          <nav aria-label="Contact and accessibility" className="flex w-full flex-wrap items-center justify-between gap-x-4">
+          <nav aria-label="Contact" className="flex w-full flex-wrap items-center justify-between gap-x-4">
           <ul className="flex flex-wrap items-center gap-x-5 text-on-band-muted">
             <li>
               <a href={phoneHref} className="flex min-h-11 items-center gap-2 hover:text-on-band hover:underline">

@@ -2,7 +2,6 @@
 
 import { useId, type ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
-import { cn } from "@/lib/cn";
 
 export function Switch({
   label,
@@ -18,32 +17,10 @@ export function Switch({
   const descriptionId = useId();
   return (
     <div className="flex flex-col gap-1">
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        aria-describedby={description ? descriptionId : undefined}
-        onClick={() => onChange(!checked)}
-        className="flex min-h-11 w-full items-center justify-between gap-4 rounded-sm text-start font-bold"
-      >
+      <label className="a11y-check-row">
         {label}
-        <span
-          aria-hidden="true"
-          className={cn(
-            "relative h-7 w-12 shrink-0 rounded-full border-2 transition-colors duration-(--dur-fast)",
-            checked ? "border-(--tb-accent) bg-(--tb-accent)" : "border-(--tb-border) bg-(--tb-bg)",
-          )}
-        >
-          <span
-            className={cn(
-              "absolute top-0.5 left-0.5 grid size-5 place-items-center rounded-full transition-transform duration-(--dur-fast)",
-              checked ? "translate-x-5 bg-(--tb-bg) text-(--tb-accent)" : "bg-(--tb-border)",
-            )}
-          >
-            {checked ? <Icon name="check" className="size-3.5" /> : null}
-          </span>
-        </span>
-      </button>
+        <input type="checkbox" checked={checked} aria-describedby={description ? descriptionId : undefined} onChange={(event) => onChange(event.target.checked)} />
+      </label>
       {description ? (
         <p id={descriptionId} className="text-sm text-(--tb-muted)">
           {description}
@@ -59,33 +36,19 @@ export function Choice<T extends string | number>({
   value,
   options,
   onChange,
-  columns = 3,
-  swatches = false,
 }: {
   legend: string;
   name: string;
   value: T;
   options: readonly { value: T; label: ReactNode; ariaLabel?: string }[];
   onChange: (value: T) => void;
-  columns?: 2 | 3 | 4 | 5;
-  /** Colour swatches show selection as a ring so the swatch colour stays visible. */
-  swatches?: boolean;
 }) {
-  const grid = { 2: "grid-cols-2", 3: "grid-cols-3", 4: "grid-cols-4", 5: "grid-cols-5" }[columns];
   return (
-    <fieldset>
+    <fieldset className="a11y-radio-rows">
       <legend className="mb-2 font-bold">{legend}</legend>
-      <div className={cn("grid gap-2", grid)}>
+      <div className="flex flex-col">
         {options.map((option) => (
-          <label
-            key={String(option.value)}
-            className={cn(
-              "flex min-h-11 cursor-pointer items-center justify-center rounded-full border-2 border-(--tb-border) px-2 text-center text-sm has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-(--tb-focus)",
-              swatches
-                ? "has-checked:border-(--tb-fg) has-checked:ring-2 has-checked:ring-(--tb-fg) has-checked:ring-offset-2"
-                : "has-checked:border-(--tb-accent) has-checked:bg-(--tb-accent) has-checked:text-(--tb-on-accent)",
-            )}
-          >
+          <label key={String(option.value)} className="a11y-radio-row">
             <input
               type="radio"
               name={name}
@@ -93,9 +56,9 @@ export function Choice<T extends string | number>({
               checked={value === option.value}
               onChange={() => onChange(option.value)}
               aria-label={option.ariaLabel}
-              className="sr-only"
+              className="a11y-radio-input"
             />
-            {option.label}
+            <span>{option.label}</span>
           </label>
         ))}
       </div>
@@ -125,7 +88,7 @@ export function Stepper({
   const button =
     "grid size-11 place-items-center rounded-full border-2 border-(--tb-border) hover:bg-(--tb-hover) aria-disabled:cursor-not-allowed aria-disabled:opacity-50";
   return (
-    <fieldset>
+    <fieldset className="a11y-stepper">
       <legend className="mb-2 font-bold">{legend}</legend>
       <div className="flex items-center justify-between gap-3">
         <button type="button" className={button} aria-disabled={!canDecrease} onClick={() => canDecrease && onDecrease()}>
@@ -147,10 +110,10 @@ export function ResetButton({ label, onClick }: { label: string; onClick: () => 
     <button
       type="button"
       onClick={onClick}
-      className="flex min-h-11 w-full items-center justify-center gap-2 rounded-full border-2 border-(--tb-fg) font-bold hover:bg-(--tb-hover)"
+      aria-label={label}
+      className="a11y-panel-reset"
     >
-      <Icon name="reset" />
-      {label}
+      Reset to default
     </button>
   );
 }

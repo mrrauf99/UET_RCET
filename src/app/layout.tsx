@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Atkinson_Hyperlegible_Next, Jost } from "next/font/google";
+import { Atkinson_Hyperlegible_Next, Jost, Lato, Lexend } from "next/font/google";
 import { A11yTrigger } from "@/components/a11y/A11yTrigger";
 import { ReadingAids } from "@/components/a11y/ReadingAids";
 import { ToolbarHost } from "@/components/a11y/ToolbarHost";
@@ -28,6 +28,9 @@ const atkinson = Atkinson_Hyperlegible_Next({
   // Next has no metric overrides for this family; Verdana's wide proportions limit layout shift.
   fallback: ["Verdana", "Arial", "sans-serif"],
 });
+
+const lexend = Lexend({ variable: "--font-lexend", subsets: ["latin"], display: "swap", preload: false });
+const lato = Lato({ variable: "--font-lato", subsets: ["latin"], weight: ["400", "700"], display: "swap", preload: false });
 
 const description =
   "Rachna College of Engineering and Technology (RCET), Gujranwala, is a constituent college of the University of Engineering and Technology, Lahore.";
@@ -89,7 +92,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       data-text-scale="100"
       // Lets Next turn smooth scrolling off during route changes so pages don't glide to the top.
       data-scroll-behavior="smooth"
-      className={`${jost.variable} ${atkinson.variable}`}
+      className={`${jost.variable} ${atkinson.variable} ${lexend.variable} ${lato.variable}`}
       // The pre-paint script rewrites <html> attributes before hydration on purpose.
       suppressHydrationWarning
     >
@@ -102,7 +105,6 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <SiteHeader
           navigation={navigation.primary}
           university={university}
-          utilityActions={<A11yTrigger placement="header" />}
         />
         <main id="main" tabIndex={-1} className="flex-1 focus:outline-none">
           {children}

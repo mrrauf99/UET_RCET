@@ -2,12 +2,11 @@
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { RULER_SWATCHES } from "@/lib/a11y/prefs";
-import { useA11yState } from "@/lib/a11y/store";
+import { resolvedAttribute, useA11yState } from "@/lib/a11y/store";
 
 const KEYBOARD_STEP_EM = 1.5;
 const TEXT_BLOCKS = "p, li, h1, h2, h3, h4, a, button, label, td, th, dt, dd, blockquote, figcaption";
 
-/** Tracks the reading line from pointer, keyboard focus (through smooth scrolling) and Alt+Arrow keys. */
 function useReadingLine(onMove: (y: number) => void) {
   const move = useEffectEvent(onMove);
 
@@ -42,9 +41,8 @@ function useReadingLine(onMove: (y: number) => void) {
       if (focusTarget) schedule();
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (!event.altKey || (event.key !== "ArrowUp" && event.key !== "ArrowDown")) return;
-      // Alt+Arrow opens native selects, so leave it to them.
-      if ((event.target as Element).closest?.("select")) return;
+      if ((!event.altKey && !event.shiftKey) || (event.key !== "ArrowUp" && event.key !== "ArrowDown")) return;
+      if ((event.target as Element).closest?.("input:not([type=checkbox]):not([type=radio]), textarea, select, [contenteditable=true]")) return;
       event.preventDefault();
       focusTarget = null;
       const step = parseFloat(getComputedStyle(document.documentElement).fontSize) * KEYBOARD_STEP_EM;
@@ -67,7 +65,7 @@ function useReadingLine(onMove: (y: number) => void) {
   }, []);
 }
 
-function ReadingRuler({ color, size }: { color: string; size: number }) {
+function ReadingRuler({ color, size, markings, opacity }: { color: string; size: number; markings: boolean; opacity: number }) {
   const ref = useRef<HTMLDivElement>(null);
   useReadingLine((y) => {
     if (ref.current) ref.current.style.transform = `translateY(${y + 12}px)`;
@@ -76,26 +74,71 @@ function ReadingRuler({ color, size }: { color: string; size: number }) {
     <div
       ref={ref}
       aria-hidden="true"
-      style={{ height: `${size * 3}px`, backgroundColor: color }}
-      className="pointer-events-none fixed inset-x-0 top-0 z-50 opacity-85 shadow-[0_0_0_1px_white] print:hidden"
-    />
+      data-reading-ruler
+      style={{ height: `${size * 40}px`, backgroundColor: color, opacity: opacity / 100 }}
+      className="pointer-events-none fixed inset-x-0 top-0 z-50 print:hidden"
+    >
+      {markings ? <div className="a11y-ruler-markings" /> : null}
+    </div>
   );
 }
 
-function ScreenMask({ size }: { size: number }) {
+function ScreenMask({ horizontal, vertical, size, color, edge, opacity }: { horizontal: boolean; vertical: boolean; size: number; color: string; edge: boolean; opacity: number }) {
   const ref = useRef<HTMLDivElement>(null);
-  useReadingLine((y) => {
-    if (ref.current) ref.current.style.transform = `translateY(${y - ref.current.offsetHeight / 2}px)`;
-  });
-  return (
-    <div
-      ref={ref}
-      aria-hidden="true"
-      style={{ height: `${size * 2.5}em` }}
-      // A huge spread shadow dims everything outside the clear band with a single element.
-      className="pointer-events-none fixed inset-x-0 top-0 z-50 shadow-[0_0_0_100vmax_rgb(0_0_0/0.6)] print:hidden"
-    />
-  );
+  useEffect(() => {
+    let x = window.innerWidth / 2;
+    let y = window.innerHeight / 2;
+    let frame = 0;
+    const render = () => {
+      frame = 0;
+      if (!ref.current) return;
+      const width = vertical ? size * 160 : window.innerWidth;
+      const height = horizontal ? size * 160 : window.innerHeight;
+      ref.current.style.width = `${width}px`;
+      ref.current.style.height = `${height}px`;
+      ref.current.style.transform = `translate(${vertical ? x - width / 2 : 0}px, ${horizontal ? y - height / 2 : 0}px)`;
+    };
+    const schedule = () => { if (!frame) frame = requestAnimationFrame(render); };
+    const pointer = (event: PointerEvent) => {
+      if ((event.target as Element).closest?.(".a11y-toolbar")) return;
+      x = event.clientX; y = event.clientY; schedule();
+    };
+    const focus = (event: FocusEvent) => {
+      const target = event.target as Element;
+      if (target.closest(".a11y-toolbar")) return;
+      const rect = target.getBoundingClientRect();
+      x = rect.left + rect.width / 2; y = rect.top + rect.height / 2; schedule();
+    };
+    const keyboard = (event: KeyboardEvent) => {
+      if (!event.shiftKey || (event.target as Element).closest?.("input:not([type=checkbox]):not([type=radio]), textarea, select, [contenteditable=true]")) return;
+      if (horizontal && ["ArrowUp", "ArrowDown"].includes(event.key)) {
+        event.preventDefault(); y = Math.max(0, Math.min(innerHeight, y + (event.key === "ArrowUp" ? -24 : 24))); schedule();
+      }
+      if (vertical && ["ArrowLeft", "ArrowRight"].includes(event.key)) {
+        event.preventDefault(); x = Math.max(0, Math.min(innerWidth, x + (event.key === "ArrowLeft" ? -24 : 24))); schedule();
+      }
+    };
+    render();
+    window.addEventListener("pointermove", pointer, { passive: true });
+    window.addEventListener("resize", schedule);
+    document.addEventListener("focusin", focus);
+    document.addEventListener("keydown", keyboard);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("pointermove", pointer);
+      window.removeEventListener("resize", schedule);
+      document.removeEventListener("focusin", focus);
+      document.removeEventListener("keydown", keyboard);
+    };
+  }, [horizontal, vertical, size]);
+  return <div ref={ref} data-screen-mask aria-hidden="true" style={{
+    boxShadow: `0 0 0 100vmax ${color}`,
+    opacity: opacity / 100,
+    borderTop: edge && horizontal ? "8px solid #F4B739" : undefined,
+    borderBottom: edge && horizontal ? "8px solid #9C47E6" : undefined,
+    borderLeft: edge && vertical ? "8px solid #9C47E6" : undefined,
+    borderRight: edge && vertical ? "8px solid #F4B739" : undefined,
+  }} className="pointer-events-none fixed left-0 top-0 z-50 print:hidden" />;
 }
 
 function FocusText({ dark }: { dark: boolean }) {
@@ -144,12 +187,64 @@ function FocusText({ dark }: { dark: boolean }) {
   );
 }
 
+function PageFeatures({ descriptions, paused }: { descriptions: boolean; paused: boolean }) {
+  useEffect(() => {
+    if (!descriptions) return;
+    const labels = new Map<HTMLImageElement, HTMLSpanElement>();
+    const sync = () => {
+      for (const [image, label] of labels) {
+        if (!image.isConnected || !image.alt.trim()) { label.remove(); labels.delete(image); }
+      }
+      document.querySelectorAll<HTMLImageElement>("img[alt]").forEach((image) => {
+        if (!image.alt.trim() || image.closest(".a11y-toolbar")) return;
+        let label = labels.get(image);
+        if (!label) {
+          label = document.createElement("span");
+          label.className = "a11y-image-description";
+          // The image already exposes its alt text to assistive technology.
+          label.setAttribute("aria-hidden", "true");
+          (image.closest("picture") ?? image).after(label);
+          labels.set(image, label);
+        }
+        if (label.textContent !== image.alt) label.textContent = image.alt;
+      });
+    };
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["alt"] });
+    return () => { observer.disconnect(); labels.forEach((label) => label.remove()); };
+  }, [descriptions]);
+
+  useEffect(() => {
+    if (!paused) return;
+    const playing = new Set<HTMLMediaElement>();
+    const stop = (media: HTMLMediaElement) => {
+      if (media.closest(".a11y-toolbar") || media.paused) return;
+      playing.add(media);
+      media.pause();
+    };
+    const scan = () => document.querySelectorAll<HTMLMediaElement>("video, audio").forEach(stop);
+    const onPlay = (event: Event) => { if (event.target instanceof HTMLMediaElement) stop(event.target); };
+    scan();
+    document.addEventListener("play", onPlay, true);
+    const observer = new MutationObserver(scan);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => {
+      document.removeEventListener("play", onPlay, true);
+      observer.disconnect();
+      playing.forEach((media) => { if (media.isConnected) void media.play().catch(() => {}); });
+    };
+  }, [paused]);
+  return null;
+}
+
 export function ReadingAids() {
   const { prefs } = useA11yState();
   return (
     <>
-      {prefs.readingGuide ? <ReadingRuler color={RULER_SWATCHES[prefs.rulerColor]} size={prefs.rulerSize} /> : null}
-      {prefs.readingMask ? <ScreenMask size={prefs.maskSize} /> : null}
+      <PageFeatures descriptions={prefs.imageDescriptions} paused={resolvedAttribute("data-motion") === "reduce"} />
+      {prefs.readingGuide ? <ReadingRuler color={RULER_SWATCHES[prefs.rulerColor]} size={prefs.rulerSize} markings={prefs.rulerMarkings} opacity={prefs.rulerOpacity} /> : null}
+      {prefs.readingMask || prefs.maskVertical ? <ScreenMask horizontal={prefs.readingMask} vertical={prefs.maskVertical} size={prefs.maskSize} color={RULER_SWATCHES[prefs.maskColor]} edge={prefs.maskEdge} opacity={prefs.maskOpacity} /> : null}
       {prefs.focusText ? <FocusText dark={prefs.toolbarDark} /> : null}
     </>
   );

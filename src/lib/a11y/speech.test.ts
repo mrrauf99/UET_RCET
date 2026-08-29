@@ -1,0 +1,124 @@
+// @vitest-environment jsdom
+import { act, createElement, useEffect } from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_SPEECH_OPTIONS, useTextToSpeech, type SpeechOptions } from "./speech";
+
+class Utterance extends EventTarget {
+  text: string;
+  lang = "";
+  rate = 1;
+  voice: SpeechSynthesisVoice | null = null;
+  onend: (() => void) | null = null;
+  onboundary: ((event: { charIndex: number }) => void) | null = null;
+  constructor(text: string) { super(); this.text = text; }
+}
+
+let root: Root;
+let api: ReturnType<typeof useTextToSpeech>;
+let spoken: Utterance[];
+let options: SpeechOptions;
+
+function Harness() { const speech = useTextToSpeech(options); useEffect(() => { api = speech; }); return null; }
+function run(action: () => void) { act(() => { action(); vi.advanceTimersByTime(100); }); }
+function last() { return spoken[spoken.length - 1]; }
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  document.body.innerHTML = '<main><h1>Title.</h1><p id="first">First sentence. Second sentence.</p><p id="last">Last paragraph.</p></main><div id="root"></div>';
+  Object.defineProperty(HTMLElement.prototype, "innerText", { configurable: true, get() { return this.textContent; } });
+  vi.spyOn(HTMLElement.prototype, "getClientRects").mockReturnValue([{ width: 100, height: 20 }] as unknown as DOMRectList);
+  HTMLElement.prototype.scrollIntoView = vi.fn();
+  spoken = [];
+  options = { ...DEFAULT_SPEECH_OPTIONS };
+  vi.stubGlobal("SpeechSynthesisUtterance", Utterance);
+  vi.stubGlobal("speechSynthesis", {
+    cancel: vi.fn(), speak: (utterance: Utterance) => spoken.push(utterance),
+    getVoices: () => [{ name: "Microsoft David", lang: "en-US", default: false }, { name: "Microsoft Zira", lang: "en-US", default: true }],
+    addEventListener: vi.fn(), removeEventListener: vi.fn(),
+  });
+  root = createRoot(document.getElementById("root")!);
+  act(() => root.render(createElement(Harness)));
+});
+
+afterEach(() => { act(() => root.unmount()); vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+
+describe("Text to Speech transport", () => {
+  it("selects a paragraph without autoplay, then reads it when Play is pressed", () => {
+    run(() => api.readFrom(document.getElementById("first")!));
+    expect(api.status).toBe("paused");
+    expect(spoken).toHaveLength(0);
+    run(api.togglePlay);
+    expect(last().text).toBe("First sentence.");
+  });
+
+  it("highlights hovered text without speech or scrolling until Play", () => {
+    run(() => api.readHovered(document.getElementById("first")!));
+    expect(document.querySelector("[data-tts-active]")?.id).toBe("first");
+    expect(spoken).toHaveLength(0);
+    expect(HTMLElement.prototype.scrollIntoView).not.toHaveBeenCalled();
+    run(api.togglePlay); expect(last().text).toBe("First sentence.");
+  });
+
+  it("selects Next and Back silently, cancels playing speech, and clamps boundaries", () => {
+    run(api.play);
+    const started = spoken.length;
+    run(api.nextBlock);
+    expect(api.playing).toBe(false);
+    expect(spoken).toHaveLength(started);
+    expect(document.querySelector("[data-tts-active]")?.id).toBe("first");
+    run(api.togglePlay); expect(last().text).toBe("First sentence.");
+    run(api.nextBlock); run(api.nextBlock);
+    expect(document.querySelector("[data-tts-active]")?.id).toBe("last");
+    run(api.togglePlay); expect(last().text).toBe("Last paragraph.");
+    run(api.previousBlock); run(api.previousBlock); run(api.previousBlock);
+    run(api.togglePlay); expect(last().text).toBe("Title.");
+  });
+
+  it("stops after the selected block unless whole-page reading is enabled", () => {
+    run(api.play);
+    run(() => last().onend?.());
+    expect(api.status).toBe("idle");
+    options = { ...options, wholePage: true };
+    act(() => root.render(createElement(Harness)));
+    run(api.play); run(() => last().onend?.());
+    expect(last().text).toBe("First sentence.");
+    run(() => last().onend?.()); expect(last().text).toBe("Second sentence.");
+    run(() => last().onend?.()); expect(last().text).toBe("Last paragraph.");
+  });
+
+  it("uses autoplay, the selected voice, and reading speed", () => {
+    options = { ...options, autoPlay: true, voice: "male", rate: 1.4 };
+    act(() => root.render(createElement(Harness)));
+    run(() => api.readFrom(document.getElementById("first")!));
+    expect(api.playing).toBe(true);
+    expect(last().voice?.name).toBe("Microsoft David");
+    expect(last().rate).toBe(1.4);
+    run(api.nextBlock); expect(last().text).toBe("Last paragraph.");
+    run(api.previousBlock); expect(last().text).toBe("First sentence.");
+  });
+
+  it("seeks forwards and backwards within a long paragraph", () => {
+    document.getElementById("first")!.textContent = Array.from({ length: 80 }, (_, index) => `word${index}`).join(" ");
+    run(() => api.readFrom(document.getElementById("first")!));
+    run(api.forward); expect(last().text.startsWith("word25 ")).toBe(true);
+    run(api.rewind); expect(last().text.startsWith("word0 ")).toBe(true);
+  });
+
+  it("ignores cancelled speech callbacks and clears highlights on reset", () => {
+    run(api.play); const cancelled = last();
+    run(api.nextBlock); run(api.togglePlay); const current = last();
+    run(() => cancelled.onend?.()); expect(last()).toBe(current);
+    run(api.reset);
+    expect(api.status).toBe("idle");
+    expect(document.querySelector("[data-tts-active]")).toBeNull();
+  });
+
+  it("reports a speech engine failure rather than leaving Play stuck", () => {
+    run(api.play);
+    run(() => last().dispatchEvent(Object.assign(new Event("error"), { error: "synthesis-failed" })));
+    expect(api.playing).toBe(false);
+    expect(api.error).toContain("Speech could not play");
+  });
+});

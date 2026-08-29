@@ -3,22 +3,27 @@ export const STORAGE_KEY = "rcet:a11y:v1";
 export const TEXT_SCALES = [87.5, 100, 112.5, 125, 150, 175, 200] as const;
 export const LINE_HEIGHTS = [0, 1.8, 2.2, 2.6] as const;
 export const LETTER_SPACINGS = [0, 0.06, 0.12, 0.2] as const;
-const FONTS = ["default", "arial", "verdana", "georgia"] as const;
-export const COLOR_PRESETS = ["none", "black-white", "black-yellow", "blue-yellow", "cream-black", "yellow-black", "white-blue"] as const;
-export const RULER_COLORS = ["red", "blue", "yellow", "green", "black"] as const;
+const FONTS = ["default", "lexend", "arial", "verdana", "comic-sans", "georgia", "tahoma", "lato", "trebuchet", "open-dyslexic"] as const;
+export const COLOR_PRESETS = ["none", "black-white", "black-yellow", "green-white", "blue-white", "orange-white", "blue-yellow", "dark-grey-light-grey", "grey-white", "purple-white", "dark-red-white", "off-white-black", "grey-dark-grey", "cream-black", "yellow-black", "yellow-blue", "white-red", "white-brown", "white-green", "white-blue", "white-black"] as const;
+export const RULER_COLORS = ["black", "blue", "green", "red", "orange", "grey", "teal", "cream", "yellow", "white"] as const;
 export const RULER_SWATCHES: Record<(typeof RULER_COLORS)[number], string> = {
-  red: "#b3261e",
-  blue: "#1d4fa8",
-  yellow: "#f5c451",
-  green: "#1b6e3c",
+  red: "#990000",
+  blue: "#003366",
+  yellow: "#ffeb3b",
+  green: "#006600",
   black: "#000000",
+  orange: "#bd3f1e",
+  grey: "#333333",
+  teal: "#008080",
+  cream: "#ffebc1",
+  white: "#ffffff",
 };
 
 export interface A11yPrefs {
   theme: "system" | "light" | "dark";
   contrast: "system" | "default" | "more";
   grayscale: boolean;
-  /** Fixed background/text pair that overrides theme and contrast; every pair is at least 11:1. */
+  /** Overrides theme and contrast with a fixed background/text pair. */
   colorPreset: (typeof COLOR_PRESETS)[number];
   textScale: (typeof TEXT_SCALES)[number];
   /** 0 keeps the design's own line height. */
@@ -28,14 +33,22 @@ export interface A11yPrefs {
   font: (typeof FONTS)[number];
   highlightLinks: boolean;
   hideImages: boolean;
+  imageDescriptions: boolean;
+  plainText: boolean;
   motion: "system" | "reduce" | "no-preference";
-  cursor: "default" | "large" | "x-large";
+  cursor: "default" | "small" | "medium" | "large" | "x-large";
   cursorColor: "black" | "white";
   readingGuide: boolean;
   rulerColor: (typeof RULER_COLORS)[number];
-  rulerSize: 1 | 2 | 3 | 4;
+  rulerSize: 1 | 2 | 3 | 4 | 5;
+  rulerMarkings: boolean;
+  rulerOpacity: 25 | 50 | 75 | 100;
   readingMask: boolean;
-  maskSize: 1 | 2 | 3;
+  maskSize: 1 | 2 | 3 | 4 | 5;
+  maskVertical: boolean;
+  maskEdge: boolean;
+  maskColor: (typeof RULER_COLORS)[number];
+  maskOpacity: 25 | 50 | 75 | 100;
   focusText: boolean;
   toolbarDark: boolean;
 }
@@ -51,24 +64,29 @@ export const DEFAULT_PREFS: A11yPrefs = {
   font: "default",
   highlightLinks: false,
   hideImages: false,
+  imageDescriptions: false,
+  plainText: false,
   motion: "system",
   cursor: "default",
   cursorColor: "black",
   readingGuide: false,
-  rulerColor: "red",
-  rulerSize: 2,
+  rulerColor: "teal",
+  rulerSize: 1,
+  rulerMarkings: false,
+  rulerOpacity: 100,
   readingMask: false,
-  maskSize: 2,
+  maskSize: 1,
+  maskVertical: false,
+  maskEdge: false,
+  maskColor: "teal",
+  maskOpacity: 100,
   focusText: false,
   toolbarDark: false,
 };
 
 /**
- * Validates raw stored preferences, writes the resolved data-* attributes to <html>,
- * and returns the clean preferences.
- *
- * Must stay self-contained (no imports, outer-scope references, spread or helpers): its source is
- * serialised into the pre-paint inline script, so the script and the toolbar share one implementation.
+ * Keep self-contained: this function is serialized into the pre-paint script.
+ * Imports, outer-scope helpers and transpiled spread helpers would be unavailable there.
  */
 export function applyPreferences(raw: unknown): A11yPrefs {
   const source = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
@@ -86,23 +104,31 @@ export function applyPreferences(raw: unknown): A11yPrefs {
     grayscale: source.grayscale === true,
     colorPreset: pick(
       source.colorPreset,
-      ["none", "black-white", "black-yellow", "blue-yellow", "cream-black", "yellow-black", "white-blue"] as const,
+      ["none", "black-white", "black-yellow", "green-white", "blue-white", "orange-white", "blue-yellow", "dark-grey-light-grey", "grey-white", "purple-white", "dark-red-white", "off-white-black", "grey-dark-grey", "cream-black", "yellow-black", "yellow-blue", "white-red", "white-brown", "white-green", "white-blue", "white-black"] as const,
       "none",
     ),
     textScale: pick(source.textScale, [87.5, 100, 112.5, 125, 150, 175, 200] as const, 100),
     lineHeight: pick(source.lineHeight, [0, 1.8, 2.2, 2.6] as const, 0),
     letterSpacing: pick(source.letterSpacing, [0, 0.06, 0.12, 0.2] as const, 0),
-    font: pick(source.font, ["default", "arial", "verdana", "georgia"] as const, "default"),
+    font: pick(source.font, ["default", "lexend", "arial", "verdana", "comic-sans", "georgia", "tahoma", "lato", "trebuchet", "open-dyslexic"] as const, "default"),
     highlightLinks: source.highlightLinks === true,
     hideImages: source.hideImages === true,
+    imageDescriptions: source.imageDescriptions === true,
+    plainText: source.plainText === true,
     motion: pick(source.motion, ["system", "reduce", "no-preference"] as const, "system"),
-    cursor: pick(source.cursor, ["default", "large", "x-large"] as const, "default"),
+    cursor: pick(source.cursor, ["default", "small", "medium", "large", "x-large"] as const, "default"),
     cursorColor: pick(source.cursorColor, ["black", "white"] as const, "black"),
     readingGuide: source.readingGuide === true,
-    rulerColor: pick(source.rulerColor, ["red", "blue", "yellow", "green", "black"] as const, "red"),
-    rulerSize: pick(source.rulerSize, [1, 2, 3, 4] as const, 2),
+    rulerColor: pick(source.rulerColor, ["black", "blue", "green", "red", "orange", "grey", "teal", "cream", "yellow", "white"] as const, "teal"),
+    rulerSize: pick(source.rulerSize, [1, 2, 3, 4, 5] as const, 1),
+    rulerMarkings: source.rulerMarkings === true,
+    rulerOpacity: pick(source.rulerOpacity, [25, 50, 75, 100] as const, 100),
     readingMask: source.readingMask === true,
-    maskSize: pick(source.maskSize, [1, 2, 3] as const, 2),
+    maskSize: pick(source.maskSize, [1, 2, 3, 4, 5] as const, 1),
+    maskVertical: source.maskVertical === true,
+    maskEdge: source.maskEdge === true,
+    maskColor: pick(source.maskColor, ["black", "blue", "green", "red", "orange", "grey", "teal", "cream", "yellow", "white"] as const, "teal"),
+    maskOpacity: pick(source.maskOpacity, [25, 50, 75, 100] as const, 100),
     focusText: source.focusText === true,
     toolbarDark: source.toolbarDark === true,
   };
@@ -132,6 +158,7 @@ export function applyPreferences(raw: unknown): A11yPrefs {
   set("data-font", prefs.font === "default" ? null : prefs.font);
   set("data-links", prefs.highlightLinks ? "highlight" : null);
   set("data-images", prefs.hideImages ? "hidden" : null);
+  set("data-plain-text", prefs.plainText ? "true" : null);
   set("data-cursor", prefs.cursor === "default" ? null : prefs.cursor + "-" + prefs.cursorColor);
 
   return prefs;
