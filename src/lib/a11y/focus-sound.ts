@@ -2,14 +2,16 @@
 
 export type FocusSoundMode = "focus" | "deeper";
 
-// CC0 loops from OpenGameArt: "Heavenly Loop" by isaiah658 and "Loopable Dungeon Ambience" by JaggedStone.
+// Recordings of the live Focus Audio output; provenance is in public/audio/README.md.
 const TRACKS: Record<FocusSoundMode, string> = {
-  focus: "/audio/focus.ogg",
-  deeper: "/audio/deeper.ogg",
+  focus: "/audio/focus.wav",
+  deeper: "/audio/deeper.wav",
 };
 
 export class FocusSound {
   private audio: HTMLAudioElement | null = null;
+
+  constructor(private onPlaybackChange: (playing: boolean, error: string) => void = () => {}) {}
 
   start(mode: FocusSoundMode, volume: number) {
     this.stop();
@@ -17,8 +19,15 @@ export class FocusSound {
     audio.loop = true;
     audio.volume = volume;
     this.audio = audio;
-    // Rejects if playback is blocked or the format is unsupported; the toolbar stays usable either way.
-    audio.play().catch(() => {});
+    const failed = () => {
+      if (this.audio !== audio) return;
+      audio.pause();
+      this.onPlaybackChange(false, "Audio could not play. Check your browser's sound permissions and try again.");
+    };
+    audio.addEventListener("error", failed);
+    audio.play().then(() => {
+      if (this.audio === audio) this.onPlaybackChange(true, "");
+    }).catch(failed);
   }
 
   setVolume(volume: number) {
