@@ -4,21 +4,20 @@ import { Container } from "@/components/ui/Container";
 import { Icon } from "@/components/ui/Icon";
 import { telHref } from "@/lib/format";
 import type { ContentLink, FooterContent, UniversityInfo } from "@/types/content";
-import { GirihPattern } from "./GirihPattern";
+import { CampusMap } from "@/components/sections/CampusMap";
 
 // Evaluated at build time; pages are statically generated.
 const currentYear = new Date().getFullYear();
+const copyrightStartYear = 2003;
 
 interface SiteFooterProps {
   footer: FooterContent;
   university: UniversityInfo;
-  exploreLinks: readonly ContentLink[];
-  campusLinks: readonly ContentLink[];
 }
 
 function FooterLinkList({ links }: { links: readonly ContentLink[] }) {
   return (
-    <ul className="mt-4 flex flex-col gap-1">
+    <ul className="mt-3 flex flex-col gap-1">
       {links.map((link) => (
         <li key={link.href}>
           {link.external ? (
@@ -28,8 +27,8 @@ function FooterLinkList({ links }: { links: readonly ContentLink[] }) {
               rel="noopener noreferrer"
               className="inline-flex min-h-11 items-center gap-2 hover:underline"
             >
+              <Icon name="chevron-down" className="size-4 -rotate-90" />
               {link.label}
-              <Icon name="external" className="size-4 text-on-band-muted" />
               <span className="sr-only"> (opens in a new tab)</span>
             </a>
           ) : (
@@ -43,64 +42,41 @@ function FooterLinkList({ links }: { links: readonly ContentLink[] }) {
   );
 }
 
-export function SiteFooter({ footer, university, exploreLinks, campusLinks }: SiteFooterProps) {
+export function SiteFooter({ footer, university }: SiteFooterProps) {
   const phoneHref = telHref(university.phone);
 
   return (
-    <footer className="band relative overflow-hidden">
-      <GirihPattern className="absolute inset-y-0 right-0 hidden h-full w-1/3 text-on-band-muted lg:block [mask-image:linear-gradient(to_left,black,transparent)]" />
-      <Container width="wide" className="relative py-16">
-        <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
-          <div>
-            <div className="flex items-center gap-4">
-              <Image src="/images/rcet-logo.png" alt="" width={72} height={72} className="size-18 shrink-0" />
-              <p className="font-display text-xl font-semibold">{university.name}</p>
-            </div>
-            <p className="mt-2 max-w-sm text-on-band-muted">{university.affiliation}</p>
-            <h2 id="footer-contact" className="mt-8 font-display text-base font-semibold">
+    <footer className="band">
+      <Container width="wide" className="py-10 lg:py-12">
+        <div className="grid gap-10 sm:grid-cols-2 xl:grid-cols-[0.9fr_1fr_1fr_1fr] xl:gap-10">
+          <Link href="/" aria-label={`${university.name} home`} className="flex items-center justify-center self-center">
+            <Image src="/images/rcet-logo.png" alt={university.name} width={240} height={240} className="size-44 object-contain lg:size-52 xl:size-60" />
+          </Link>
+
+          <div className="min-w-0">
+            <h2 id="footer-contact" className="border-b-2 border-on-band pb-3 font-display text-xl font-semibold">
               {footer.contactHeading}
             </h2>
-            <address className="mt-4 flex flex-col gap-3 not-italic">
-              <span className="flex gap-2">
-                <Icon name="map-pin" className="mt-0.5 size-5 text-on-band-muted" />
-                {university.address}
-              </span>
-              <a href={phoneHref} className="flex min-h-11 items-center gap-2 hover:underline">
-                <Icon name="phone" className="size-5 text-on-band-muted" />
-                {university.phone}
-              </a>
-              <a href={`mailto:${university.email}`} className="flex min-h-11 items-center gap-2 hover:underline">
-                <Icon name="mail" className="size-5 text-on-band-muted" />
-                {university.email}
-              </a>
+            <address className="mt-3 text-base leading-relaxed not-italic">
+              <p>{university.address}</p>
+              <p>Phone: <a href={phoneHref} className="inline-flex min-h-11 items-center hover:underline">{university.phone}</a></p>
+              <p>Email: <a href={`mailto:${university.email}`} className="inline-flex min-h-11 max-w-full items-center break-all hover:underline">{university.email}</a></p>
             </address>
           </div>
 
-          <nav aria-labelledby="footer-explore">
-            <h2 id="footer-explore" className="font-display text-base font-semibold">
-              Explore RCET
-            </h2>
-            <FooterLinkList links={exploreLinks} />
-          </nav>
-
-          <nav aria-labelledby="footer-important">
-            <h2 id="footer-important" className="font-display text-base font-semibold">
+          <nav aria-labelledby="footer-important" className="min-w-0">
+            <h2 id="footer-important" className="border-b-2 border-on-band pb-3 font-display text-xl font-semibold">
               {footer.linksHeading}
             </h2>
             <FooterLinkList links={footer.links} />
           </nav>
 
-          <nav aria-labelledby="footer-campuses">
-            <h2 id="footer-campuses" className="font-display text-base font-semibold">
-              UET campuses
-            </h2>
-            <FooterLinkList links={campusLinks} />
-          </nav>
+          <CampusMap university={university} heading={footer.locationHeading} />
         </div>
 
-        <div className="mt-16 flex flex-col items-center gap-2 border-t border-on-band/20 pt-6 text-center text-sm text-on-band-muted md:flex-row md:justify-between md:text-start">
+        <div className="mt-8 flex flex-col items-center gap-2 border-t border-on-band/20 pt-6 text-center text-sm text-on-band-muted md:flex-row md:justify-between md:text-start">
           <p>
-            © {university.establishedYear}–{currentYear} {university.name}, {university.location}.
+            © {copyrightStartYear}–{currentYear} {university.name}, {university.location}.
           </p>
           <p>
             Developed by{" "}

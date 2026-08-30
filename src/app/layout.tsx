@@ -112,8 +112,6 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <SiteFooter
           footer={footer}
           university={university}
-          exploreLinks={navigation.footerExplore}
-          campusLinks={navigation.uetCampuses}
         />
         <A11yTrigger placement="floating" />
         <ChatHost />

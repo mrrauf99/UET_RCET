@@ -1,5 +1,3 @@
-import { Admissions } from "@/components/sections/Admissions";
-import { CampusMap } from "@/components/sections/CampusMap";
 import { CoordinatorMessage } from "@/components/sections/CoordinatorMessage";
 import { Departments } from "@/components/sections/Departments";
 import { Facilities, type FacilityGroup } from "@/components/sections/Facilities";
@@ -15,7 +13,6 @@ import {
   getImage,
   getPrograms,
   getStudentSocieties,
-  getUniversity,
 } from "@/lib/content";
 import type { ImageAsset } from "@/types/content";
 
@@ -41,8 +38,7 @@ const FACILITY_GROUPS = [
 const STUDENT_LIFE_PHOTOS = ["image-023", "image-018", "image-019", "image-015"];
 
 export default async function HomePage() {
-  const [university, homepage, departments, programs, facilities, societies] = await Promise.all([
-    getUniversity(),
+  const [homepage, departments, programs, facilities, societies] = await Promise.all([
     getHomepage(),
     getDepartments(),
     getPrograms(),
@@ -84,8 +80,6 @@ export default async function HomePage() {
       <Facilities groups={facilityGroups} labCount={labs} image={libraryImage} />
       <CoordinatorMessage message={homepage.coordinatorMessage} portrait={coordinatorPortrait} />
       <StudentLife societies={societies} photos={studentPhotos.filter((photo): photo is ImageAsset => photo !== null)} />
-      <Admissions university={university} />
-      <CampusMap university={university} />
     </>
   );
 }
