@@ -1,5 +1,6 @@
 # dependencies
 /node_modules
+/.cache/a11y-audio/
 /.pnp
 .pnp.*
 .yarn/*
