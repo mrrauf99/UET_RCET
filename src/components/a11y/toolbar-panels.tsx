@@ -489,20 +489,35 @@ function collectOutline(view: StructureView): Outline[] {
     }).filter((item) => item.label);
 }
 
-export function PageStructurePanel() {
+export function PageStructurePanel({ onHeadingNavigate }: { onHeadingNavigate: () => void }) {
   const [view, setView] = useState<StructureView>("headings");
   const [items, setItems] = useState<Outline[]>(() => collectOutline("headings"));
   const [activeId, setActiveId] = useState<string | null>(null);
-  useEffect(() => {
-    if (!activeId) return;
-    const element = document.getElementById(activeId);
-    element?.setAttribute("data-structure-active", "true");
-    return () => element?.removeAttribute("data-structure-active");
-  }, [activeId]);
+  const activeElement = useRef<HTMLElement | null>(null);
+  const preserveHighlight = useRef(false);
+  useEffect(() => () => {
+    const element = activeElement.current;
+    if (!element) return;
+    if (!preserveHighlight.current) {
+      element.removeAttribute("data-structure-active");
+      return;
+    }
+    const clearOnOutside = (event: PointerEvent) => {
+      if (event.target instanceof Node && element.contains(event.target)) return;
+      element.removeAttribute("data-structure-active");
+      document.removeEventListener("pointerdown", clearOnOutside, true);
+    };
+    document.addEventListener("pointerdown", clearOnOutside, true);
+  }, []);
   const go = (id: string) => {
     const element = document.getElementById(id);
     if (!element) return;
+    document.querySelectorAll("[data-structure-active]").forEach((target) => target.removeAttribute("data-structure-active"));
+    activeElement.current = element;
+    element.setAttribute("data-structure-active", "true");
     setActiveId(id);
+    preserveHighlight.current = view === "headings" && window.matchMedia("(max-width: 1023px)").matches;
+    if (preserveHighlight.current) onHeadingNavigate();
     element.scrollIntoView({ block: "center", behavior: "instant" });
   };
   return <>

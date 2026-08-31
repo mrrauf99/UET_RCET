@@ -521,7 +521,7 @@ export function A11yToolbar() {
     cursor: <CursorPanel prefs={prefs} announce={announce} />,
     mask: <MaskPanel prefs={prefs} announce={announce} />,
     page: <PageOptionsPanel prefs={prefs} announce={announce} />,
-    structure: <PageStructurePanel />,
+    structure: <PageStructurePanel onHeadingNavigate={close} />,
     speech: <SpeechPanel enabled={ttsOn} options={speechOptions} movable={movablePlayer} error={tts.error} onToggle={toggleTts} onOptions={setSpeechOptions} onMovable={(on) => { setMovablePlayer(on); setPlayerOffset({ x: 0, y: 0 }); }} onReset={() => {
       tts.reset(); setTtsOn(false); setSpeechOptions(DEFAULT_SPEECH_OPTIONS); setMovablePlayer(false); setPlayerOffset({ x: 0, y: 0 }); announce("Text to speech reset");
     }} />,
