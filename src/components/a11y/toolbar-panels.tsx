@@ -305,11 +305,12 @@ export function TranslationPanel({ announce }: { announce: Announce }) {
 }
 
 export function ColourPanel({ prefs, announce }: PrefsPanelProps) {
+  const selected = prefs.colorPreset === "none" ? (prefs.grayscale ? "Monochrome" : "Default theme") : PRESET_LABELS[prefs.colorPreset].name;
   return (
     <div className="a11y-colour-controls">
       <label className="a11y-ruler-check">
         Monochrome
-        <input type="checkbox" checked={prefs.grayscale} onChange={(event) => set({ grayscale: event.target.checked }, announce, `Monochrome ${onOff(event.target.checked)}`)} />
+        <input type="checkbox" checked={prefs.grayscale} onChange={(event) => set({ grayscale: event.target.checked, colorPreset: "none" }, announce, `Monochrome ${onOff(event.target.checked)}. Page colours reset.`)} />
       </label>
       <div className="a11y-colour-background">
         <h3>Page Background</h3>
@@ -330,6 +331,7 @@ export function ColourPanel({ prefs, announce }: PrefsPanelProps) {
           </fieldset>
         ))}
       </div>
+      <p className="a11y-colour-selection">Selected: {selected}</p>
       <button type="button" className="a11y-panel-reset" aria-label="Reset colour themes to default" onClick={() => set({ theme: DEFAULT_PREFS.theme, contrast: DEFAULT_PREFS.contrast, grayscale: false, colorPreset: "none" }, announce, "Colours reset")}>Reset to default</button>
     </div>
   );

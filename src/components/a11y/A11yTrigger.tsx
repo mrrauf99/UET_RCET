@@ -14,7 +14,10 @@ export function A11yTrigger({ placement }: A11yTriggerProps) {
   return (
     <button
       type="button"
+      data-a11y-trigger={placement}
+      title="Open accessibility toolbar"
       aria-expanded={toolbarOpen}
+      aria-controls={toolbarOpen ? "accessibility-toolbar" : undefined}
       onClick={(event) => openToolbar(event.currentTarget)}
       className={cn(
         "inline-flex items-center justify-center gap-2 font-bold",

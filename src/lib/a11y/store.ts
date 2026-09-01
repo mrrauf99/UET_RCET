@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { applyPreferences, DEFAULT_PREFS, STORAGE_KEY, toStored, type A11yPrefs } from "./prefs";
+import { applyPreferences, DEFAULT_PREFS, STORAGE_KEY, TOOLBAR_STORAGE_KEY, toStored, type A11yPrefs } from "./prefs";
 
 interface A11yState {
   prefs: A11yPrefs;
@@ -34,8 +34,19 @@ function writeStored(prefs: A11yPrefs) {
 }
 
 function getState(): A11yState {
-  state ??= { prefs: applyPreferences(readStored()), toolbarOpen: false };
+  if (!state) {
+    let toolbarOpen = false;
+    try { toolbarOpen = localStorage.getItem(TOOLBAR_STORAGE_KEY) === "open"; } catch { /* Preferences still work when storage is blocked. */ }
+    state = { prefs: applyPreferences(readStored()), toolbarOpen };
+  }
   return state;
+}
+
+function persistToolbar(open: boolean) {
+  try {
+    if (open) localStorage.setItem(TOOLBAR_STORAGE_KEY, "open");
+    else localStorage.removeItem(TOOLBAR_STORAGE_KEY);
+  } catch { /* Closing the toolbar must always work. */ }
 }
 
 function emit(next: A11yState) {
@@ -49,15 +60,22 @@ function onMediaChange() {
   emit({ ...getState() });
 }
 
+function onStorageChange(event: StorageEvent) {
+  if (event.key !== STORAGE_KEY && event.key !== null) return;
+  emit({ ...getState(), prefs: applyPreferences(readStored()) });
+}
+
 function subscribe(listener: () => void) {
   if (listeners.size === 0) {
     for (const query of MEDIA_QUERIES) window.matchMedia(query).addEventListener("change", onMediaChange);
+    window.addEventListener("storage", onStorageChange);
   }
   listeners.add(listener);
   return () => {
     listeners.delete(listener);
     if (listeners.size === 0) {
       for (const query of MEDIA_QUERIES) window.matchMedia(query).removeEventListener("change", onMediaChange);
+      window.removeEventListener("storage", onStorageChange);
     }
   };
 }
@@ -67,7 +85,10 @@ export function useA11yState(): A11yState {
 }
 
 export function updatePrefs(update: Partial<A11yPrefs>) {
-  const prefs = applyPreferences({ ...getState().prefs, ...update });
+  const next = { ...getState().prefs, ...update };
+  if (update.grayscale === true) next.colorPreset = "none";
+  else if (update.colorPreset && update.colorPreset !== "none") next.grayscale = false;
+  const prefs = applyPreferences(next);
   writeStored(prefs);
   emit({ ...getState(), prefs });
 }
@@ -86,13 +107,16 @@ export function openToolbar(trigger: HTMLElement | null) {
   returnFocusTo = trigger;
   // Pushes the sticky header and page content below the fixed toolbar.
   document.documentElement.setAttribute("data-toolbar", "open");
+  persistToolbar(true);
   emit({ ...getState(), toolbarOpen: true });
 }
 
 export function closeToolbar() {
   document.documentElement.removeAttribute("data-toolbar");
+  persistToolbar(false);
   emit({ ...getState(), toolbarOpen: false });
-  returnFocusTo?.focus();
+  const trigger = returnFocusTo?.isConnected ? returnFocusTo : document.querySelector<HTMLElement>("[data-a11y-trigger]");
+  trigger?.focus();
   returnFocusTo = null;
 }
 

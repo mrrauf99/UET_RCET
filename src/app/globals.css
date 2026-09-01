@@ -254,26 +254,26 @@
 }
 
 /* Colour presets override every theme/contrast/grayscale combination; the repeated attribute raises specificity above them. */
-:root[data-color-preset="black-white"] { --p-bg: rgb(0, 0, 0); --p-fg: rgb(255, 255, 255); }
-:root[data-color-preset="black-yellow"] { --p-bg: rgb(0, 0, 0); --p-fg: rgb(252, 237, 32); }
-:root[data-color-preset="green-white"] { --p-bg: rgb(0, 91, 14); --p-fg: rgb(255, 255, 255); }
-:root[data-color-preset="blue-white"] { --p-bg: rgb(2, 1, 255); --p-fg: rgb(255, 255, 255); }
-:root[data-color-preset="orange-white"] { --p-bg: rgb(200, 52, 0); --p-fg: rgb(255, 255, 255); }
-:root[data-color-preset="blue-yellow"] { --p-bg: rgb(2, 1, 245); --p-fg: rgb(252, 235, 62); }
-:root[data-color-preset="dark-grey-light-grey"] { --p-bg: rgb(52, 58, 63); --p-fg: rgb(184, 188, 192); }
-:root[data-color-preset="grey-white"] { --p-bg: rgb(77, 77, 77); --p-fg: rgb(255, 255, 255); }
-:root[data-color-preset="purple-white"] { --p-bg: rgb(147, 33, 145); --p-fg: rgb(255, 255, 255); }
-:root[data-color-preset="dark-red-white"] { --p-bg: rgb(124, 24, 24); --p-fg: rgb(255, 255, 255); }
-:root[data-color-preset="off-white-black"] { --p-bg: rgb(244, 238, 217); --p-fg: rgb(29, 25, 22); }
-:root[data-color-preset="grey-dark-grey"] { --p-bg: rgb(202, 207, 211); --p-fg: rgb(52, 58, 63); }
-:root[data-color-preset="cream-black"] { --p-bg: rgb(255, 233, 189); --p-fg: rgb(0, 0, 0); }
-:root[data-color-preset="yellow-black"] { --p-bg: rgb(252, 237, 32); --p-fg: rgb(0, 0, 0); }
-:root[data-color-preset="yellow-blue"] { --p-bg: rgb(252, 237, 32); --p-fg: rgb(2, 1, 255); }
-:root[data-color-preset="white-red"] { --p-bg: rgb(255, 255, 255); --p-fg: rgb(195, 39, 43); }
-:root[data-color-preset="white-brown"] { --p-bg: rgb(255, 255, 255); --p-fg: rgb(149, 82, 0); }
-:root[data-color-preset="white-green"] { --p-bg: rgb(255, 255, 255); --p-fg: rgb(0, 115, 18); }
-:root[data-color-preset="white-blue"] { --p-bg: rgb(255, 255, 255); --p-fg: rgb(1, 0, 255); }
-:root[data-color-preset="white-black"] { --p-bg: rgb(255, 255, 255); --p-fg: rgb(0, 0, 0); }
+:root[data-color-preset="black-white"] { --p-bg: rgb(0, 0, 0); --p-fg: rgb(255, 255, 255); --p-link: #FF0000; }
+:root[data-color-preset="black-yellow"] { --p-bg: rgb(0, 0, 0); --p-fg: rgb(252, 237, 32); --p-link: #FF0000; }
+:root[data-color-preset="green-white"] { --p-bg: rgb(0, 91, 14); --p-fg: rgb(255, 255, 255); --p-link: #FFE100; }
+:root[data-color-preset="blue-white"] { --p-bg: rgb(2, 1, 255); --p-fg: rgb(255, 255, 255); --p-link: #FFAB00; }
+:root[data-color-preset="orange-white"] { --p-bg: rgb(200, 52, 0); --p-fg: rgb(255, 255, 255); --p-link: #F5FF00; }
+:root[data-color-preset="blue-yellow"] { --p-bg: rgb(2, 1, 245); --p-fg: rgb(252, 235, 62); --p-link: #fff; }
+:root[data-color-preset="dark-grey-light-grey"] { --p-bg: rgb(52, 58, 63); --p-fg: rgb(184, 188, 192); --p-link: #FCED20; }
+:root[data-color-preset="grey-white"] { --p-bg: rgb(77, 77, 77); --p-fg: rgb(255, 255, 255); --p-link: #ffcb53; }
+:root[data-color-preset="purple-white"] { --p-bg: rgb(147, 33, 145); --p-fg: rgb(255, 255, 255); --p-link: #fff902; }
+:root[data-color-preset="dark-red-white"] { --p-bg: rgb(124, 24, 24); --p-fg: rgb(255, 255, 255); --p-link: #00ff67; }
+:root[data-color-preset="off-white-black"] { --p-bg: rgb(244, 238, 217); --p-fg: rgb(29, 25, 22); --p-link: #000; }
+:root[data-color-preset="grey-dark-grey"] { --p-bg: rgb(202, 207, 211); --p-fg: rgb(52, 58, 63); --p-link: #000; }
+:root[data-color-preset="cream-black"] { --p-bg: rgb(255, 233, 189); --p-fg: rgb(0, 0, 0); --p-link: #000; }
+:root[data-color-preset="yellow-black"] { --p-bg: rgb(252, 237, 32); --p-fg: rgb(0, 0, 0); --p-link: #000; }
+:root[data-color-preset="yellow-blue"] { --p-bg: rgb(252, 237, 32); --p-fg: rgb(2, 1, 255); --p-link: #000; }
+:root[data-color-preset="white-red"] { --p-bg: rgb(255, 255, 255); --p-fg: rgb(195, 39, 43); --p-link: #000; }
+:root[data-color-preset="white-brown"] { --p-bg: rgb(255, 255, 255); --p-fg: rgb(149, 82, 0); --p-link: #000; }
+:root[data-color-preset="white-green"] { --p-bg: rgb(255, 255, 255); --p-fg: rgb(0, 115, 18); --p-link: #000; }
+:root[data-color-preset="white-blue"] { --p-bg: rgb(255, 255, 255); --p-fg: rgb(1, 0, 255); --p-link: #000; }
+:root[data-color-preset="white-black"] { --p-bg: rgb(255, 255, 255); --p-fg: rgb(0, 0, 0); --p-link: #C00; }
 
 :root[data-color-preset][data-color-preset][data-color-preset][data-color-preset] {
   --rcet-bg: var(--p-bg);
@@ -290,7 +290,7 @@
   --rcet-accent: var(--p-fg);
   --rcet-accent-hover: var(--p-fg);
   --rcet-on-accent: var(--p-bg);
-  --rcet-link: var(--p-fg);
+  --rcet-link: var(--p-link);
   --rcet-focus: var(--p-fg);
   --rcet-focus-on-band: var(--p-fg);
   --rcet-success: var(--p-fg);
@@ -303,8 +303,37 @@
   --rcet-pattern-opacity: 0;
 }
 
-:root[data-color-preset] a {
+:root[data-color-preset] a:not(.a11y-toolbar a) {
   text-decoration-line: underline;
+}
+
+/* Flatten page surfaces, including utility colours and overlays, while preserving the tools and media. */
+:root[data-color-preset] body :not(.a11y-toolbar, .a11y-toolbar *, [data-a11y-trigger], [data-a11y-trigger] *, [data-screen-mask], [data-reading-ruler], [data-reading-ruler] *) {
+  color: var(--rcet-fg) !important;
+  border-color: var(--rcet-border) !important;
+  text-shadow: none !important;
+  box-shadow: none !important;
+}
+:root[data-color-preset] body :is([class*="bg-"], button, input, select, textarea, option, dialog):not(.a11y-toolbar, .a11y-toolbar *, [data-a11y-trigger], [data-a11y-trigger] *) {
+  background: var(--rcet-bg) !important;
+}
+:root[data-color-preset] body :is(a, a *):not(.a11y-toolbar, .a11y-toolbar *, [data-a11y-trigger], [data-a11y-trigger] *) {
+  color: var(--rcet-link) !important;
+}
+:root[data-color-preset] body :is(button, input, select, textarea):not(.a11y-toolbar *, [data-a11y-trigger]) {
+  border: 1px solid var(--rcet-border);
+  accent-color: var(--rcet-fg);
+}
+:root[data-color-preset] body :is(input, textarea):not(.a11y-toolbar *)::placeholder {
+  color: var(--rcet-fg);
+  opacity: 1;
+}
+:root[data-color-preset] body [aria-hidden="true"][class*="bg-linear"] {
+  background: none !important;
+}
+:root[data-color-preset] ::selection {
+  background: var(--rcet-fg);
+  color: var(--rcet-bg);
 }
 
 :root[data-color-preset] .band {
@@ -417,7 +446,7 @@
     display: none;
   }
 
-  :root[data-grayscale="true"] :is(img, video, iframe, picture) {
+  :root[data-grayscale="true"] :is(img, video, iframe, picture, svg, [data-a11y-trigger], button[aria-haspopup="dialog"]) {
     filter: grayscale(1);
   }
 }
@@ -502,7 +531,7 @@
   --toolbar-offset: 0px;
 }
 :root[data-toolbar="open"] {
-  --toolbar-offset: 5.25rem;
+  --toolbar-offset: 60px;
 }
 :root[data-toolbar="open"] body {
   padding-top: var(--toolbar-offset);
@@ -748,8 +777,7 @@
   --tool-mask: #3d3d3d;
   --tool-page: #3d3d3d;
 }
-:root[data-contrast="more"],
-:root[data-color-preset] {
+:root[data-contrast="more"] {
   --tool-listen: #000000;
   --tool-text: #000000;
   --tool-language: #000000;
@@ -772,6 +800,7 @@
   --tb-focus: #0a1f55;
   --rcet-ring: var(--tb-focus);
   --rcet-halo: var(--tb-bg);
+  border-color: var(--tb-border);
   background-color: var(--tb-bg);
   color: var(--tb-fg);
 }
@@ -1109,6 +1138,7 @@ body {
   justify-content: space-between;
 }
 .a11y-colour-swatches label {
+  position: relative;
   display: grid;
   width: 40px;
   height: 40px;
@@ -1117,10 +1147,17 @@ body {
   border-radius: 50%;
   cursor: pointer;
 }
-.a11y-colour-swatches label:has(:checked),
-.a11y-colour-swatches label:has(:focus-visible) {
+.a11y-colour-swatches label:has(:checked) {
   outline: 2px solid var(--tb-fg);
   outline-offset: 3px;
+}
+.a11y-colour-swatches label:has(:focus-visible) {
+  outline: 3px dashed var(--tb-focus);
+  outline-offset: 4px;
+}
+.a11y-colour-selection {
+  font-size: 14px;
+  line-height: 1.5;
 }
 .a11y-panel-reset {
   width: 100%;
@@ -1411,7 +1448,6 @@ body {
   font-synthesis: none;
 }
 
-/* Mobile menu: a sheet that slides in from the right (where its toggle sits) over a dimmed page. */
 .nav-sheet::backdrop {
   background-color: color-mix(in srgb, var(--rcet-band) 60%, transparent);
 }

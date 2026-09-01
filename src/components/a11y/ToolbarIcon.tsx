@@ -48,7 +48,7 @@ const icons = {
       <path d="M6 8v3M10 8v4M14 8v3M18 8v4" />
     </>
   ),
-  cursor: <path d="M5 3v15l4-3.7 2.7 6 2.7-1.2-2.6-5.9h5.6z" fill="currentColor" />,
+  cursor: <path d="M4.9 4.5c-.7-.3-1.4.4-1.1 1.1l4.4 13c.4 1 1.7 1.1 2.2.1l2.1-4.7 4.3 4.3a1 1 0 0 0 1.4 0l.9-.9a1 1 0 0 0 0-1.4l-4.3-4.3 4.7-2.1c1-.5.9-1.8-.1-2.2z" fill="currentColor" stroke="none" />,
   mask: (
     <>
       <path d="M3 4h18M3 7.5h18M3 16.5h18M3 20h18" />

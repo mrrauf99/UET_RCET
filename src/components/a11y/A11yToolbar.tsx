@@ -246,15 +246,15 @@ export function A11yToolbar() {
   const tipShown = tip?.shown ?? false;
   useEffect(() => {
     if (!tipShown) return;
-    // Captured first so Escape only hides the label, without also closing a panel (WCAG 1.4.13).
+    // Capture Escape to dismiss hover labels even when a panel is open (WCAG 1.4.13).
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
       if (event.key !== "Escape") return;
-      event.stopPropagation();
+      if (!panel) event.stopPropagation();
       hideTipOnEscape();
     };
     document.addEventListener("keydown", onKeyDown, true);
     return () => document.removeEventListener("keydown", onKeyDown, true);
-  }, [tipShown]);
+  }, [tipShown, panel]);
 
   const readFrom = useEffectEvent((target: Element) => tts.readFrom(target));
 
@@ -324,17 +324,34 @@ export function A11yToolbar() {
     requestAnimationFrame(() => setMessage(text));
   };
 
-  const togglePanel = (id: PanelId) => {
+  const positionPanel = (id: PanelId) => {
     const button = panelButtons.current.get(id);
     const bar = barRef.current?.getBoundingClientRect();
     if (button && bar) {
       const left = button.getBoundingClientRect().left - bar.left;
       const width = Math.min(300, innerWidth - 16);
-      const anchor = left + button.offsetWidth / 2 - width / 2;
+      const anchor = id === "page" ? left : left + button.offsetWidth / 2 - width / 2;
       setPanelLeft(Math.max(8, Math.min(anchor, bar.width - width - 8)));
     }
+  };
+  const togglePanel = (id: PanelId) => {
+    positionPanel(id);
     setPanel((current) => (current === id ? null : id));
   };
+  const repositionPanel = useEffectEvent(() => { if (panel) positionPanel(panel); });
+  useEffect(() => {
+    if (!panel) return;
+    const row = toolbarRef.current;
+    const reposition = () => repositionPanel();
+    window.addEventListener("resize", reposition);
+    window.visualViewport?.addEventListener("resize", reposition);
+    row?.addEventListener("scroll", reposition, { passive: true });
+    return () => {
+      window.removeEventListener("resize", reposition);
+      window.visualViewport?.removeEventListener("resize", reposition);
+      row?.removeEventListener("scroll", reposition);
+    };
+  }, [panel]);
 
   const textIndex = TEXT_SCALES.indexOf(prefs.textScale);
   const setTextScale = (index: number) => {
@@ -442,6 +459,14 @@ export function A11yToolbar() {
   };
 
   const onToolbarKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "ArrowDown") {
+      const id = [...panelButtons.current].find(([, button]) => button === document.activeElement)?.[0];
+      if (!id) return;
+      event.preventDefault();
+      if (panel !== id) togglePanel(id);
+      requestAnimationFrame(() => document.getElementById(panelId)?.querySelector<HTMLElement>("input, button, select, [tabindex='0']")?.focus());
+      return;
+    }
     if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
     const tools = [...(toolbarRef.current?.querySelectorAll<HTMLButtonElement>("[data-tool]") ?? [])];
     const current = tools.indexOf(document.activeElement as HTMLButtonElement);
@@ -486,7 +511,7 @@ export function A11yToolbar() {
   };
   const panelTool = (id: PanelId) => ({
     expanded: panel === id,
-    controls: panelId,
+    controls: panel === id ? panelId : undefined,
     onClick: () => togglePanel(id),
     buttonRef: (element: HTMLButtonElement | null) => {
       if (element) panelButtons.current.set(id, element);
@@ -543,6 +568,7 @@ export function A11yToolbar() {
 
   return (
     <section
+      id="accessibility-toolbar"
       ref={barRef}
       aria-label="Accessibility toolbar"
       data-dark={prefs.toolbarDark || undefined}
@@ -616,7 +642,7 @@ export function A11yToolbar() {
           />
 
           <ToolButton label="Translation" icon="translate" color="--tool-language" {...panelTool("translate")} {...rove()} />
-          <ToolButton label="Colour theme" icon="palette" color="--tool-colour" {...panelTool("colour")} {...rove()} />
+          <ToolButton label="Colour theme" icon="palette" color="--tool-colour" active={prefs.grayscale || prefs.colorPreset !== "none"} {...panelTool("colour")} {...rove()} />
           <ToolButton label={prefs.readingGuide ? "Ruler options (on)" : "Ruler options"} icon="ruler" color="--tool-ruler" active={prefs.readingGuide} {...panelTool("ruler")} {...rove()} />
           <ToolButton label="Cursor options" icon="cursor" color="--tool-cursor" {...panelTool("cursor")} {...rove()} />
           <ToolButton label={(prefs.readingMask || prefs.maskVertical) ? "Screen mask (on)" : "Screen mask"} icon="mask" color="--tool-mask" active={prefs.readingMask || prefs.maskVertical} {...panelTool("mask")} {...rove()} />
@@ -661,7 +687,7 @@ export function A11yToolbar() {
               <h2 id={`${panelId}-title`} className="text-xl">
                 {PANEL_TITLES[panel]}
               </h2>
-              {panel === "structure" ? <button type="button" aria-label="Close Page Structure" onClick={closePanel} className="a11y-structure-close grid size-11 place-items-center rounded-full hover:bg-(--tb-hover)"><ToolbarIcon name="close" className="size-5" /></button> : null}
+              {panel === "structure" || panel === "colour" ? <button type="button" aria-label={`Close ${PANEL_TITLES[panel]}`} onClick={closePanel} className={cn("grid size-11 shrink-0 place-items-center rounded-full hover:bg-(--tb-hover)", panel === "structure" && "a11y-structure-close")}><ToolbarIcon name="close" className="size-5" /></button> : null}
             </div>
             {panels[panel]}
           </section>

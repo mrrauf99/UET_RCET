@@ -1,14 +1,35 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from "vitest";
-import { applyPreferences, COLOR_PRESETS, DEFAULT_PREFS, PREFERENCES_INIT_SCRIPT, STORAGE_KEY, toStored } from "./prefs";
+import { applyPreferences, COLOR_PRESETS, DEFAULT_PREFS, PREFERENCES_INIT_SCRIPT, STORAGE_KEY, TOOLBAR_STORAGE_KEY, toStored } from "./prefs";
 
-afterEach(() => { localStorage.clear(); applyPreferences({}); });
+afterEach(() => { localStorage.clear(); applyPreferences({}); document.documentElement.removeAttribute("data-toolbar"); });
 
 describe("accessibility preferences", () => {
+  it("restores only monochrome when older saved preferences enabled both colour modes", () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ grayscale: true, colorPreset: "blue-white" }));
+    // oxlint-disable-next-line no-eval -- verifies normalization runs before paint
+    window.eval(PREFERENCES_INIT_SCRIPT);
+    expect(document.documentElement.getAttribute("data-grayscale")).toBe("true");
+    expect(document.documentElement.hasAttribute("data-color-preset")).toBe(false);
+  });
+  it("restores an open toolbar before paint and falls back safely for corrupt preferences", () => {
+    localStorage.setItem(STORAGE_KEY, "invalid JSON");
+    localStorage.setItem(TOOLBAR_STORAGE_KEY, "open");
+    // oxlint-disable-next-line no-eval -- verifies malformed storage cannot break startup
+    window.eval(PREFERENCES_INIT_SCRIPT);
+    expect(document.documentElement.getAttribute("data-toolbar")).toBe("open");
+    expect(document.documentElement.getAttribute("data-text-scale")).toBe("100");
+    expect(document.documentElement.hasAttribute("data-plain-text")).toBe(false);
+  });
   it("applies and persists every reference colour and cursor size", () => {
     for (const colorPreset of COLOR_PRESETS) {
       const prefs = applyPreferences({ colorPreset });
       expect(prefs.colorPreset).toBe(colorPreset);
+      expect(document.documentElement.getAttribute("data-color-preset")).toBe(colorPreset === "none" ? null : colorPreset);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(toStored(prefs)));
+      applyPreferences({});
+      // oxlint-disable-next-line no-eval -- verifies each saved theme is restored before paint
+      window.eval(PREFERENCES_INIT_SCRIPT);
       expect(document.documentElement.getAttribute("data-color-preset")).toBe(colorPreset === "none" ? null : colorPreset);
     }
     for (const cursor of ["small", "medium", "large", "x-large"] as const) {

@@ -1,4 +1,5 @@
 export const STORAGE_KEY = "rcet:a11y:v1";
+export const TOOLBAR_STORAGE_KEY = "rcet:a11y:toolbar";
 
 export const TEXT_SCALES = [87.5, 100, 112.5, 125, 150, 175, 200] as const;
 export const LINE_HEIGHTS = [0, 1.8, 2.2, 2.6] as const;
@@ -132,6 +133,8 @@ export function applyPreferences(raw: unknown): A11yPrefs {
     focusText: source.focusText === true,
     toolbarDark: source.toolbarDark === true,
   };
+  // Older saved settings could combine both modes; restore only monochrome.
+  if (prefs.grayscale) prefs.colorPreset = "none";
   const root = document.documentElement;
   const set = function (name: string, value: string | null) {
     if (value === null) root.removeAttribute(name);
@@ -176,4 +179,4 @@ export function toStored(prefs: A11yPrefs): Partial<A11yPrefs> {
 /** Runs during HTML parsing, before first paint, so saved preferences never flash. */
 export const PREFERENCES_INIT_SCRIPT = `(function(){var raw={};try{raw=JSON.parse(localStorage.getItem(${JSON.stringify(
   STORAGE_KEY,
-)})||"{}")}catch(e){}try{(${applyPreferences.toString()})(raw)}catch(e){}})();`;
+)})||"{}")}catch(e){}try{(${applyPreferences.toString()})(raw)}catch(e){}try{if(localStorage.getItem(${JSON.stringify(TOOLBAR_STORAGE_KEY)})==="open")document.documentElement.setAttribute("data-toolbar","open")}catch(e){}})();`;
