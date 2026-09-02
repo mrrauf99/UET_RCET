@@ -463,15 +463,30 @@ export function PageOptionsPanel({ prefs, announce }: PrefsPanelProps) {
   const motionReduced = resolvedAttribute("data-motion") === "reduce";
   return (
     <div className="a11y-page-controls">
-      <div className="a11y-page-image-options">
+      {!prefs.plainText ? <div className="a11y-page-image-options">
         <Switch label="Pause Animations and Video" checked={motionReduced} onChange={(on) => set({ motion: on ? "reduce" : "no-preference" }, announce, `Animations and video ${on ? "paused" : "on"}`)} />
-        <Switch label="Hide Images" checked={prefs.hideImages} onChange={(on) => set({ hideImages: on }, announce, `Images ${on ? "hidden" : "shown"}`)} />
+        <Switch label="Hide Images" checked={prefs.hideImages} onChange={(on) => set({ hideImages: on }, announce, on ? "Images hidden on page. Images which are links have not been hidden." : "Images shown")} />
         <Switch label="View Image Description" checked={prefs.imageDescriptions} onChange={(on) => set({ imageDescriptions: on }, announce, `Image descriptions ${onOff(on)}`)} />
-      </div>
+      </div> : null}
+      {!prefs.plainText ? <hr className="a11y-divider" /> : null}
+      <Switch label="Plain Text Mode" checked={prefs.plainText} onChange={(on) => set({ plainText: on, textArea: DEFAULT_PREFS.textArea }, announce, `Plain text mode ${onOff(on)}`)} />
       <hr className="a11y-divider" />
-      <Switch label="Plain Text Mode" checked={prefs.plainText} onChange={(on) => set({ plainText: on }, announce, `Plain text mode ${onOff(on)}`)} />
-      <hr className="a11y-divider" />
-      <ResetButton label="Reset page options to default" onClick={() => set({ motion: DEFAULT_PREFS.motion, hideImages: false, imageDescriptions: false, plainText: false }, announce, "Page options reset")} />
+      {prefs.plainText ? <>
+        <Choice
+          legend="Text Area"
+          name="page-text-area"
+          value={prefs.textArea}
+          options={[
+            { value: "small", label: "Small", ariaLabel: "Small Text Area" },
+            { value: "medium", label: "Medium", ariaLabel: "Medium Text Area" },
+            { value: "large", label: "Large", ariaLabel: "Large Text Area" },
+            { value: "full", label: "Full Page", ariaLabel: "Full Page Text Area" },
+          ]}
+          onChange={(textArea) => set({ textArea }, announce, `Text area ${textArea === "full" ? "full page" : textArea}`)}
+        />
+        <hr className="a11y-divider" />
+      </> : null}
+      <ResetButton label="Reset page options to default" onClick={() => set({ motion: DEFAULT_PREFS.motion, hideImages: false, imageDescriptions: false, plainText: false, textArea: DEFAULT_PREFS.textArea }, announce, "Page options reset")} />
     </div>
   );
 }

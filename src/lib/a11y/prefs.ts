@@ -36,6 +36,7 @@ export interface A11yPrefs {
   hideImages: boolean;
   imageDescriptions: boolean;
   plainText: boolean;
+  textArea: "small" | "medium" | "large" | "full";
   motion: "system" | "reduce" | "no-preference";
   cursor: "default" | "small" | "medium" | "large" | "x-large";
   cursorColor: "black" | "white";
@@ -67,6 +68,7 @@ export const DEFAULT_PREFS: A11yPrefs = {
   hideImages: false,
   imageDescriptions: false,
   plainText: false,
+  textArea: "small",
   motion: "system",
   cursor: "default",
   cursorColor: "black",
@@ -116,6 +118,7 @@ export function applyPreferences(raw: unknown): A11yPrefs {
     hideImages: source.hideImages === true,
     imageDescriptions: source.imageDescriptions === true,
     plainText: source.plainText === true,
+    textArea: pick(source.textArea, ["small", "medium", "large", "full"] as const, "small"),
     motion: pick(source.motion, ["system", "reduce", "no-preference"] as const, "system"),
     cursor: pick(source.cursor, ["default", "small", "medium", "large", "x-large"] as const, "default"),
     cursorColor: pick(source.cursorColor, ["black", "white"] as const, "black"),
@@ -162,6 +165,7 @@ export function applyPreferences(raw: unknown): A11yPrefs {
   set("data-links", prefs.highlightLinks ? "highlight" : null);
   set("data-images", prefs.hideImages ? "hidden" : null);
   set("data-plain-text", prefs.plainText ? "true" : null);
+  set("data-text-area", prefs.plainText ? prefs.textArea : null);
   set("data-cursor", prefs.cursor === "default" ? null : prefs.cursor + "-" + prefs.cursorColor);
 
   return prefs;

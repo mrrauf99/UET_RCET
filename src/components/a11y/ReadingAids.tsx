@@ -2,6 +2,7 @@
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { RULER_SWATCHES } from "@/lib/a11y/prefs";
+import { observeImageDescriptions, pausePageMedia } from "@/lib/a11y/page-effects";
 import { resolvedAttribute, useA11yState } from "@/lib/a11y/store";
 
 const KEYBOARD_STEP_EM = 1.5;
@@ -190,50 +191,12 @@ function FocusText({ dark }: { dark: boolean }) {
 function PageFeatures({ descriptions, paused }: { descriptions: boolean; paused: boolean }) {
   useEffect(() => {
     if (!descriptions) return;
-    const labels = new Map<HTMLImageElement, HTMLSpanElement>();
-    const sync = () => {
-      for (const [image, label] of labels) {
-        if (!image.isConnected || !image.alt.trim()) { label.remove(); labels.delete(image); }
-      }
-      document.querySelectorAll<HTMLImageElement>("img[alt]").forEach((image) => {
-        if (!image.alt.trim() || image.closest(".a11y-toolbar")) return;
-        let label = labels.get(image);
-        if (!label) {
-          label = document.createElement("span");
-          label.className = "a11y-image-description";
-          // The image already exposes its alt text to assistive technology.
-          label.setAttribute("aria-hidden", "true");
-          (image.closest("picture") ?? image).after(label);
-          labels.set(image, label);
-        }
-        if (label.textContent !== image.alt) label.textContent = image.alt;
-      });
-    };
-    sync();
-    const observer = new MutationObserver(sync);
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["alt"] });
-    return () => { observer.disconnect(); labels.forEach((label) => label.remove()); };
+    return observeImageDescriptions();
   }, [descriptions]);
 
   useEffect(() => {
     if (!paused) return;
-    const playing = new Set<HTMLMediaElement>();
-    const stop = (media: HTMLMediaElement) => {
-      if (media.closest(".a11y-toolbar") || media.paused) return;
-      playing.add(media);
-      media.pause();
-    };
-    const scan = () => document.querySelectorAll<HTMLMediaElement>("video, audio").forEach(stop);
-    const onPlay = (event: Event) => { if (event.target instanceof HTMLMediaElement) stop(event.target); };
-    scan();
-    document.addEventListener("play", onPlay, true);
-    const observer = new MutationObserver(scan);
-    observer.observe(document.body, { childList: true, subtree: true });
-    return () => {
-      document.removeEventListener("play", onPlay, true);
-      observer.disconnect();
-      playing.forEach((media) => { if (media.isConnected) void media.play().catch(() => {}); });
-    };
+    return pausePageMedia();
   }, [paused]);
   return null;
 }
@@ -242,7 +205,7 @@ export function ReadingAids() {
   const { prefs } = useA11yState();
   return (
     <>
-      <PageFeatures descriptions={prefs.imageDescriptions} paused={resolvedAttribute("data-motion") === "reduce"} />
+      <PageFeatures descriptions={prefs.imageDescriptions && !prefs.plainText} paused={resolvedAttribute("data-motion") === "reduce"} />
       {prefs.readingGuide ? <ReadingRuler color={RULER_SWATCHES[prefs.rulerColor]} size={prefs.rulerSize} markings={prefs.rulerMarkings} opacity={prefs.rulerOpacity} /> : null}
       {prefs.readingMask || prefs.maskVertical ? <ScreenMask horizontal={prefs.readingMask} vertical={prefs.maskVertical} size={prefs.maskSize} color={RULER_SWATCHES[prefs.maskColor]} edge={prefs.maskEdge} opacity={prefs.maskOpacity} /> : null}
       {prefs.focusText ? <FocusText dark={prefs.toolbarDark} /> : null}

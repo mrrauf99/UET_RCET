@@ -21,6 +21,18 @@ describe("accessibility preferences", () => {
     expect(document.documentElement.getAttribute("data-text-scale")).toBe("100");
     expect(document.documentElement.hasAttribute("data-plain-text")).toBe(false);
   });
+  it("restores each plain text area before paint and removes the area attribute when disabled", () => {
+    for (const textArea of ["small", "medium", "large", "full"] as const) {
+      const prefs = applyPreferences({ plainText: true, textArea });
+      expect(applyPreferences(toStored(prefs)).textArea).toBe(textArea);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(toStored(prefs)));
+      // oxlint-disable-next-line no-eval -- verifies the script actually delivered before hydration
+      window.eval(PREFERENCES_INIT_SCRIPT);
+      expect(document.documentElement.getAttribute("data-text-area")).toBe(textArea);
+    }
+    expect(applyPreferences({ textArea: "invalid" }).textArea).toBe("small");
+    expect(document.documentElement.hasAttribute("data-text-area")).toBe(false);
+  });
   it("applies and persists every reference colour and cursor size", () => {
     for (const colorPreset of COLOR_PRESETS) {
       const prefs = applyPreferences({ colorPreset });

@@ -19,7 +19,15 @@ export function Switch({
     <div className="flex flex-col gap-1">
       <label className="a11y-check-row">
         {label}
-        <input type="checkbox" checked={checked} aria-describedby={description ? descriptionId : undefined} onChange={(event) => onChange(event.target.checked)} />
+        <input
+          type="checkbox"
+          checked={checked}
+          aria-describedby={description ? descriptionId : undefined}
+          onChange={(event) => onChange(event.target.checked)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") { event.preventDefault(); onChange(!checked); }
+          }}
+        />
       </label>
       {description ? (
         <p id={descriptionId} className="text-sm text-(--tb-muted)">

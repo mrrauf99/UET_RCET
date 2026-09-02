@@ -646,7 +646,7 @@ export function A11yToolbar() {
           <ToolButton label={prefs.readingGuide ? "Ruler options (on)" : "Ruler options"} icon="ruler" color="--tool-ruler" active={prefs.readingGuide} {...panelTool("ruler")} {...rove()} />
           <ToolButton label="Cursor options" icon="cursor" color="--tool-cursor" {...panelTool("cursor")} {...rove()} />
           <ToolButton label={(prefs.readingMask || prefs.maskVertical) ? "Screen mask (on)" : "Screen mask"} icon="mask" color="--tool-mask" active={prefs.readingMask || prefs.maskVertical} {...panelTool("mask")} {...rove()} />
-          <ToolButton label="Page options" icon="options" color="--tool-page" {...panelTool("page")} {...rove()} />
+          <ToolButton label="Page options" icon="options" color="--tool-page" active={prefs.plainText || prefs.hideImages || prefs.imageDescriptions || prefs.motion === "reduce"} {...panelTool("page")} {...rove()} />
           <ToolButton label="Page structure" icon="structure" color="--tool-page" {...panelTool("structure")} {...rove()} />
 
           <ToolButton
