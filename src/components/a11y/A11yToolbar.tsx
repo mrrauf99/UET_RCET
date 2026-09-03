@@ -4,6 +4,7 @@ import { useEffect, useEffectEvent, useId, useRef, useState, type CSSProperties,
 import { cn } from "@/lib/cn";
 import { FocusSound, type FocusSoundMode } from "@/lib/a11y/focus-sound";
 import { TEXT_SCALES } from "@/lib/a11y/prefs";
+import { clearOutlineHighlight, type StructureView } from "@/lib/a11y/page-structure";
 import { DEFAULT_SPEECH_OPTIONS, isSpeechSupported, useTextToSpeech } from "@/lib/a11y/speech";
 import { closeToolbar, resetPrefs, updatePrefs, useA11yState } from "@/lib/a11y/store";
 import { isVoiceControlSupported, startVoiceControl } from "@/lib/a11y/voice-control";
@@ -130,6 +131,7 @@ function PageButton({ direction, onClick }: { direction: "prev" | "next"; onClic
 export function A11yToolbar() {
   const { prefs } = useA11yState();
   const [panel, setPanel] = useState<PanelId | null>(null);
+  const [structureView, setStructureView] = useState<StructureView>("headings");
   const [panelLeft, setPanelLeft] = useState(0);
   const [focusIndex, setFocusIndex] = useState(0);
   const [edges, setEdges] = useState({ prev: false, next: false });
@@ -166,6 +168,12 @@ export function A11yToolbar() {
   };
   const panelId = useId();
   const tts = useTextToSpeech(speechOptions);
+
+  useEffect(() => {
+    if (panel !== "structure") return;
+    document.documentElement.setAttribute("data-page-structure", "open");
+    return () => document.documentElement.removeAttribute("data-page-structure");
+  }, [panel]);
 
   // The toolbar only renders in the browser (it is closed during server rendering), so capabilities can be read directly.
   const support = { speech: isSpeechSupported(), voice: isVoiceControlSupported() };
@@ -546,7 +554,7 @@ export function A11yToolbar() {
     cursor: <CursorPanel prefs={prefs} announce={announce} />,
     mask: <MaskPanel prefs={prefs} announce={announce} />,
     page: <PageOptionsPanel prefs={prefs} announce={announce} />,
-    structure: <PageStructurePanel onHeadingNavigate={close} />,
+    structure: <PageStructurePanel view={structureView} onViewChange={setStructureView} onNavigate={closePanel} />,
     speech: <SpeechPanel enabled={ttsOn} options={speechOptions} movable={movablePlayer} error={tts.error} onToggle={toggleTts} onOptions={setSpeechOptions} onMovable={(on) => { setMovablePlayer(on); setPlayerOffset({ x: 0, y: 0 }); }} onReset={() => {
       tts.reset(); setTtsOn(false); setSpeechOptions(DEFAULT_SPEECH_OPTIONS); setMovablePlayer(false); setPlayerOffset({ x: 0, y: 0 }); announce("Text to speech reset");
     }} />,
@@ -655,6 +663,7 @@ export function A11yToolbar() {
             color="--tool-colour"
             onClick={() => {
               resetPrefs();
+              clearOutlineHighlight();
               tts.reset();
               setTtsOn(false);
               setSpeechOptions(DEFAULT_SPEECH_OPTIONS);
@@ -667,6 +676,7 @@ export function A11yToolbar() {
               setVoiceStatus("");
               setPlayerOffset({ x: 0, y: 0 });
               setPanel(null);
+              setStructureView("headings");
               announce("All settings reset");
             }}
             {...rove()}

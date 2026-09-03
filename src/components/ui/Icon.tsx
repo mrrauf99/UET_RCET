@@ -3,6 +3,7 @@ const paths = {
   close: "M6 6l12 12M18 6L6 18",
   "chevron-down": "M6 9l6 6 6-6",
   "arrow-right": "M5 12h14M13 6l6 6-6 6",
+  "arrow-up": "M12 20V4M5 11l7-7 7 7",
   external: "M15 3h6v6M21 3L10 14M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5",
   phone: "M5 4h3l2 5-2.5 1.5a11 11 0 0 0 6 6L15 14l5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z",
   mail: "M4 6h16v12H4zM4 7l8 6 8-6",
