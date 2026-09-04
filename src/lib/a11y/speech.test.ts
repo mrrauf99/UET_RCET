@@ -31,7 +31,7 @@ beforeEach(() => {
   vi.spyOn(HTMLElement.prototype, "getClientRects").mockReturnValue([{ width: 100, height: 20 }] as unknown as DOMRectList);
   HTMLElement.prototype.scrollIntoView = vi.fn();
   spoken = [];
-  options = { ...DEFAULT_SPEECH_OPTIONS };
+  options = { ...DEFAULT_SPEECH_OPTIONS, autoPlay: false };
   vi.stubGlobal("SpeechSynthesisUtterance", Utterance);
   vi.stubGlobal("speechSynthesis", {
     cancel: vi.fn(), speak: (utterance: Utterance) => spoken.push(utterance),
@@ -45,6 +45,40 @@ beforeEach(() => {
 afterEach(() => { act(() => root.unmount()); vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe("Text to Speech transport", () => {
+  it("enables automatic playback by default", () => {
+    expect(DEFAULT_SPEECH_OPTIONS.autoPlay).toBe(true);
+  });
+
+  it("reads header, footer and standalone text, switching targets without scrolling", () => {
+    document.body.insertAdjacentHTML("afterbegin", '<header><a id="nav-text" href="/">Home navigation</a></header><div id="plain-text">Standalone text</div><footer><span id="footer-text">Contact the college</span></footer>');
+    options = { ...options, autoPlay: true };
+    act(() => root.render(createElement(Harness)));
+    run(() => api.readHovered(document.getElementById("nav-text")!));
+    expect(last().text).toBe("Home navigation");
+    const cancelled = last();
+    run(() => api.readHovered(document.getElementById("footer-text")!));
+    expect(last().text).toBe("Contact the college");
+    const count = spoken.length;
+    run(() => api.readHovered(document.getElementById("footer-text")!));
+    expect(spoken).toHaveLength(count);
+    run(() => cancelled.onend?.());
+    expect(spoken).toHaveLength(count);
+    run(() => api.readHovered(document.getElementById("plain-text")!));
+    expect(last().text).toBe("Standalone text");
+    expect(HTMLElement.prototype.scrollIntoView).not.toHaveBeenCalled();
+    run(api.reset);
+    run(() => api.readHovered(document.getElementById("plain-text")!));
+    expect(spoken).toHaveLength(count + 2);
+  });
+
+  it("ignores hidden text, editable fields and the accessibility toolbar", () => {
+    document.body.insertAdjacentHTML("beforeend", '<div hidden><p id="hidden-text">Hidden</p></div><div class="a11y-toolbar"><button id="toolbar-text">Toolbar</button></div><div contenteditable="true" id="editable-text">Draft</div>');
+    options = { ...options, autoPlay: true };
+    act(() => root.render(createElement(Harness)));
+    for (const id of ["hidden-text", "toolbar-text", "editable-text"]) run(() => api.readHovered(document.getElementById(id)!));
+    expect(spoken).toHaveLength(0);
+  });
+
   it("selects a paragraph without autoplay, then reads it when Play is pressed", () => {
     run(() => api.readFrom(document.getElementById("first")!));
     expect(api.status).toBe("paused");

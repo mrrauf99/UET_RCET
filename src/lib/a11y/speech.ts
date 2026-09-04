@@ -2,15 +2,24 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const BLOCK_SELECTOR = "main :is(h1, h2, h3, h4, h5, h6, p, li, blockquote, dt, dd, figcaption)";
+const BLOCK_SELECTOR = "h1, h2, h3, h4, h5, h6, p, li, blockquote, dt, dd, figcaption, a, button, label, summary, td, th, span, div";
 const HOVER_SELECTOR = "h1, h2, h3, h4, h5, h6, p, li, blockquote, dt, dd, figcaption, a, button, label, summary, td, th";
+const EXCLUDED_SELECTOR = "[aria-hidden='true'], [hidden], .sr-only, .a11y-toolbar, script, style, textarea, input, select, [contenteditable='true']";
 const ACTIVE_ATTRIBUTE = "data-tts-active";
+
+function readableTarget(target: Element): HTMLElement | null {
+  if (target.closest(EXCLUDED_SELECTOR)) return null;
+  const element = target.closest<HTMLElement>(HOVER_SELECTOR) ?? target.closest<HTMLElement>("span, div");
+  if (!element || !element.innerText?.trim() || !element.getClientRects().length) return null;
+  if (!element.matches(HOVER_SELECTOR) && ![...element.childNodes].some((node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim())) return null;
+  return element;
+}
 
 function readableBlocks(): HTMLElement[] {
   return [...document.querySelectorAll<HTMLElement>(BLOCK_SELECTOR)].filter((element) => {
-    if (!element.innerText.trim() || !element.getClientRects().length || element.closest("[aria-hidden='true'], .sr-only")) return false;
+    if (!readableTarget(element)) return false;
     // Skip containers whose text is read through a nested block, so nothing is spoken twice.
-    return !element.querySelector(BLOCK_SELECTOR.replace("main ", ""));
+    return !element.querySelector(BLOCK_SELECTOR);
   });
 }
 
@@ -39,7 +48,7 @@ export function isSpeechSupported() {
 type SpeechStatus = "idle" | "playing" | "paused";
 
 export interface SpeechOptions { autoPlay: boolean; wholePage: boolean; voice: "male" | "female"; rate: number; }
-export const DEFAULT_SPEECH_OPTIONS: SpeechOptions = { autoPlay: false, wholePage: false, voice: "female", rate: 1 };
+export const DEFAULT_SPEECH_OPTIONS: SpeechOptions = { autoPlay: true, wholePage: false, voice: "female", rate: 1 };
 
 export function useTextToSpeech(options: SpeechOptions = DEFAULT_SPEECH_OPTIONS) {
   const [status, setStatusState] = useState<SpeechStatus>("idle");
@@ -50,6 +59,7 @@ export function useTextToSpeech(options: SpeechOptions = DEFAULT_SPEECH_OPTIONS)
   const generation = useRef(0);
   const pending = useRef<SpeechSynthesisUtterance | null>(null);
   const hovered = useRef<HTMLElement | null>(null);
+  const scrollOnRead = useRef(true);
   const settings = useRef(options);
   const wordOffset = useRef(0);
   const [error, setError] = useState("");
@@ -90,6 +100,7 @@ export function useTextToSpeech(options: SpeechOptions = DEFAULT_SPEECH_OPTIONS)
     setStatus("idle");
     position.current = { block: 0, sentence: 0 };
     blocks.current = [];
+    hovered.current = null;
     wordOffset.current = 0;
     setError("");
     mark(undefined);
@@ -112,7 +123,7 @@ export function useTextToSpeech(options: SpeechOptions = DEFAULT_SPEECH_OPTIONS)
       speakNext();
       return;
     }
-    mark(element);
+    mark(element, scrollOnRead.current);
     const current = generation.current;
     const offset = wordOffset.current;
     const words = text.split(/\s+/);
@@ -166,25 +177,23 @@ export function useTextToSpeech(options: SpeechOptions = DEFAULT_SPEECH_OPTIONS)
     }, 60);
   };
 
-  /** Hover selects text without moving the page; autoplay also starts reading it. */
   const readHovered = (target: Element) => {
-    if (statusRef.current === "playing") return;
-    const element = target.closest<HTMLElement>(HOVER_SELECTOR);
-    if (!element || element.closest("[aria-hidden='true'], .sr-only")) return;
+    const element = readableTarget(target);
+    if (!element) return;
     if (hovered.current === element) return;
     const available = readableBlocks();
-    const index = available.findIndex((block) => block === element || block.contains(element));
-    if (index === -1) return;
+    let index = available.indexOf(element);
+    if (index === -1) { available.unshift(element); index = 0; }
     hovered.current = element;
     blocks.current = available;
     position.current = { block: index, sentence: 0 };
     wordOffset.current = 0;
-    if (settings.current.autoPlay) restart();
+    if (settings.current.autoPlay) restart(false);
     else { pause(); mark(available[index], false); }
   };
 
-  const restart = () => {
-    hovered.current = null;
+  const restart = (scroll = true) => {
+    scrollOnRead.current = scroll;
     generation.current += 1;
     const current = generation.current;
     window.speechSynthesis.cancel();
@@ -198,6 +207,7 @@ export function useTextToSpeech(options: SpeechOptions = DEFAULT_SPEECH_OPTIONS)
   };
 
   const play = () => {
+    hovered.current = null;
     blocks.current = readableBlocks();
     restart();
   };
@@ -251,13 +261,8 @@ export function useTextToSpeech(options: SpeechOptions = DEFAULT_SPEECH_OPTIONS)
   };
 
   const readFrom = (target: Element) => {
-    blocks.current = readableBlocks();
-    const index = blocks.current.findIndex((element) => element === target || element.contains(target));
-    if (index === -1) return;
-    position.current = { block: index, sentence: 0 };
-    wordOffset.current = 0;
-    if (settings.current.autoPlay) restart();
-    else { pause(); mark(blocks.current[index]); }
+    hovered.current = null;
+    readHovered(target);
   };
 
   useEffect(

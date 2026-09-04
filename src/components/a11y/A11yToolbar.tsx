@@ -268,14 +268,13 @@ export function A11yToolbar() {
 
   useEffect(() => {
     if (!ttsOn) return;
-    const main = document.getElementById("main");
     const onClick = (event: MouseEvent) => {
       const target = event.target as Element;
-      if (target.closest("a, button, input, select, textarea, label")) return;
+      if (barRef.current?.contains(target) || playerRef.current?.contains(target) || target.closest("a, button, input, select, textarea, label")) return;
       readFrom(target);
     };
-    main?.addEventListener("click", onClick);
-    return () => main?.removeEventListener("click", onClick);
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
   }, [ttsOn]);
 
   const readHovered = useEffectEvent((target: Element) => tts.readHovered(target));
@@ -285,14 +284,22 @@ export function A11yToolbar() {
     let timer: number | undefined;
     const onOver = (event: PointerEvent) => {
       const target = event.target as Element;
-      if (event.pointerType === "touch" || barRef.current?.contains(target) || playerRef.current?.contains(target)) return;
       window.clearTimeout(timer);
+      if (event.pointerType === "touch" || barRef.current?.contains(target) || playerRef.current?.contains(target)) return;
       timer = window.setTimeout(() => readHovered(target), 150);
     };
+    const onFocus = (event: FocusEvent) => {
+      window.clearTimeout(timer);
+      const target = event.target as Element;
+      if (barRef.current?.contains(target) || playerRef.current?.contains(target)) return;
+      readHovered(target);
+    };
     document.addEventListener("pointerover", onOver);
+    document.addEventListener("focusin", onFocus);
     return () => {
       window.clearTimeout(timer);
       document.removeEventListener("pointerover", onOver);
+      document.removeEventListener("focusin", onFocus);
     };
   }, [ttsOn]);
 
@@ -371,8 +378,17 @@ export function A11yToolbar() {
 
   const toggleTts = () => {
     if (ttsOn) tts.reset();
+    else setSpeechOptions((current) => ({ ...current, autoPlay: true }));
     setTtsOn(!ttsOn);
-    announce(ttsOn ? "Text to speech off" : "Text to speech on. Select any paragraph or press play.");
+    announce(ttsOn ? "Text to speech off" : "Text to speech on. Hover over text or focus a link or button to hear it.");
+  };
+
+  const resetSpeech = () => {
+    tts.reset();
+    setTtsOn(false);
+    setSpeechOptions(DEFAULT_SPEECH_OPTIONS);
+    setMovablePlayer(false);
+    setPlayerOffset({ x: 0, y: 0 });
   };
 
   const toggleSound = (on: boolean) => {
@@ -556,7 +572,7 @@ export function A11yToolbar() {
     page: <PageOptionsPanel prefs={prefs} announce={announce} />,
     structure: <PageStructurePanel view={structureView} onViewChange={setStructureView} onNavigate={closePanel} />,
     speech: <SpeechPanel enabled={ttsOn} options={speechOptions} movable={movablePlayer} error={tts.error} onToggle={toggleTts} onOptions={setSpeechOptions} onMovable={(on) => { setMovablePlayer(on); setPlayerOffset({ x: 0, y: 0 }); }} onReset={() => {
-      tts.reset(); setTtsOn(false); setSpeechOptions(DEFAULT_SPEECH_OPTIONS); setMovablePlayer(false); setPlayerOffset({ x: 0, y: 0 }); announce("Text to speech reset");
+      resetSpeech(); announce("Text to speech reset");
     }} />,
   };
 
@@ -664,17 +680,13 @@ export function A11yToolbar() {
             onClick={() => {
               resetPrefs();
               clearOutlineHighlight();
-              tts.reset();
-              setTtsOn(false);
-              setSpeechOptions(DEFAULT_SPEECH_OPTIONS);
-              setMovablePlayer(false);
+              resetSpeech();
               sound.current?.stop();
               setFocusSound({ playing: false, mode: "focus", volume: 0.4 });
               stopVoice.current?.();
               stopVoice.current = null;
               setListening(false);
               setVoiceStatus("");
-              setPlayerOffset({ x: 0, y: 0 });
               setPanel(null);
               setStructureView("headings");
               announce("All settings reset");
