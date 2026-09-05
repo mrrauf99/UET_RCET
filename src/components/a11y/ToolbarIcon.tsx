@@ -14,6 +14,7 @@ const icons = {
       <circle cx="17.5" cy="16" r="2.5" />
     </>
   ),
+  download: <path d="M5 20h14v-2H5zM15 4H9v7H5l7 7 7-7h-4z" fill="currentColor" stroke="none" />,
   mic: (
     <>
       <rect x="9" y="3" width="6" height="11" rx="3" />

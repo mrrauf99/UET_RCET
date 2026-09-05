@@ -6,6 +6,7 @@ import { FocusSound, type FocusSoundMode } from "@/lib/a11y/focus-sound";
 import { TEXT_SCALES } from "@/lib/a11y/prefs";
 import { clearOutlineHighlight, type StructureView } from "@/lib/a11y/page-structure";
 import { DEFAULT_SPEECH_OPTIONS, isSpeechSupported, useTextToSpeech } from "@/lib/a11y/speech";
+import { useAudioDownload } from "@/lib/a11y/audio-download";
 import { closeToolbar, resetPrefs, updatePrefs, useA11yState } from "@/lib/a11y/store";
 import { isVoiceControlSupported, startVoiceControl } from "@/lib/a11y/voice-control";
 import { ToolbarIcon, type ToolbarIconName } from "./ToolbarIcon";
@@ -52,6 +53,7 @@ const PANEL_TITLES: Record<PanelId, string> = {
 
 interface ToolButtonProps {
   label: string;
+  tooltipLabel?: string;
   color: string;
   icon?: ToolbarIconName;
   text?: string;
@@ -61,20 +63,22 @@ interface ToolButtonProps {
   expanded?: boolean;
   controls?: string;
   disabled?: boolean;
+  busy?: boolean;
+  onPointerDown?: () => void;
   onClick: () => void;
   onFocus: () => void;
   tabIndex: number;
   buttonRef?: (element: HTMLButtonElement | null) => void;
 }
 
-function ToolButton({ label, color, icon, text, pressed, active, expanded, controls, disabled, onClick, onFocus, tabIndex, buttonRef }: ToolButtonProps) {
+function ToolButton({ label, tooltipLabel, color, icon, text, pressed, active, expanded, controls, disabled, busy, onPointerDown, onClick, onFocus, tabIndex, buttonRef }: ToolButtonProps) {
   const highlighted = pressed || active || expanded;
   return (
     <button
       ref={buttonRef}
       type="button"
       data-tool
-      data-label={label}
+      data-label={tooltipLabel || label}
       data-active={pressed || active || undefined}
       data-expanded={expanded || undefined}
       aria-label={label}
@@ -82,8 +86,10 @@ function ToolButton({ label, color, icon, text, pressed, active, expanded, contr
       aria-expanded={expanded}
       aria-controls={controls}
       aria-disabled={disabled || undefined}
+      aria-busy={busy || undefined}
       tabIndex={tabIndex}
       onClick={onClick}
+      onPointerDown={onPointerDown}
       onFocus={onFocus}
       style={{ backgroundColor: `var(${color})`, "--tool-c": `var(${color})` } as CSSProperties}
       className={cn(
@@ -174,6 +180,7 @@ export function A11yToolbar() {
     document.documentElement.setAttribute("data-page-structure", "open");
     return () => document.documentElement.removeAttribute("data-page-structure");
   }, [panel]);
+  const audioDownload = useAudioDownload(speechOptions, () => tts.reset());
 
   // The toolbar only renders in the browser (it is closed during server rendering), so capabilities can be read directly.
   const support = { speech: isSpeechSupported(), voice: isVoiceControlSupported() };
@@ -423,6 +430,7 @@ export function A11yToolbar() {
   };
 
   const close = () => {
+    audioDownload.reset();
     tts.reset();
     sound.current?.stop();
     stopVoice.current?.();
@@ -672,12 +680,14 @@ export function A11yToolbar() {
           <ToolButton label={(prefs.readingMask || prefs.maskVertical) ? "Screen mask (on)" : "Screen mask"} icon="mask" color="--tool-mask" active={prefs.readingMask || prefs.maskVertical} {...panelTool("mask")} {...rove()} />
           <ToolButton label="Page options" icon="options" color="--tool-page" active={prefs.plainText || prefs.hideImages || prefs.imageDescriptions || prefs.motion === "reduce"} {...panelTool("page")} {...rove()} />
           <ToolButton label="Page structure" icon="structure" color="--tool-page" {...panelTool("structure")} {...rove()} />
+          <ToolButton label="Download Audio File" tooltipLabel="Download Audio" icon="download" color="--tool-download" active={audioDownload.waiting} disabled={audioDownload.busy} busy={audioDownload.busy} onPointerDown={audioDownload.captureSelection} onClick={() => { setPanel(null); audioDownload.download(); }} {...rove()} />
 
           <ToolButton
             label="Reset all settings"
             icon="reset"
             color="--tool-colour"
             onClick={() => {
+              audioDownload.reset();
               resetPrefs();
               clearOutlineHighlight();
               resetSpeech();
@@ -743,6 +753,12 @@ export function A11yToolbar() {
       </div>
 
       {ttsOn && movablePlayer ? player : null}
+
+      <div data-audio-notices className="a11y-download-notices" aria-live="polite" aria-relevant="additions" aria-atomic="false">
+        {audioDownload.notices.map((notice) => <output key={notice.id} className="a11y-download-notice">
+          <button type="button" aria-label={`Dismiss notification: ${notice.text}`} onClick={() => audioDownload.dismissNotice(notice.id)}>{notice.text}</button>
+        </output>)}
+      </div>
 
       {tip ? (
         // Visual only: every control already has the same text as its accessible name.

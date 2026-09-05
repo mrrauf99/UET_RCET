@@ -765,6 +765,7 @@
   --tool-cursor: #3b4b84;
   --tool-mask: #666666;
   --tool-page: #008775;
+  --tool-download: #a78f0b;
   --tool-icon: #ffffff;
 }
 :root[data-grayscale="true"] {
@@ -776,6 +777,7 @@
   --tool-cursor: #3d3d3d;
   --tool-mask: #3d3d3d;
   --tool-page: #3d3d3d;
+  --tool-download: #3d3d3d;
 }
 :root[data-contrast="more"] {
   --tool-listen: #000000;
@@ -786,6 +788,7 @@
   --tool-cursor: #000000;
   --tool-mask: #000000;
   --tool-page: #000000;
+  --tool-download: #000000;
 }
 
 /* Toolbar surface: independent of the page theme so tools stay recognisable, but follows forced contrast. */
@@ -1371,6 +1374,42 @@ body {
 [data-structure-active] {
   outline: 3px solid #ffff00;
   outline-offset: 6px;
+}
+.a11y-tools [data-tool][aria-label="Download Audio File"] {
+  color: #ffffff;
+}
+.a11y-tools [data-tool][aria-label="Download Audio File"][aria-busy="true"] {
+  cursor: wait;
+}
+.a11y-download-notices {
+  position: fixed;
+  z-index: 90;
+  top: max(100px, calc(var(--toolbar-offset) + 20px));
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  max-width: calc(100vw - 40px);
+  pointer-events: none;
+}
+.a11y-download-notice {
+  max-width: 100%;
+  border: 1px solid #cccccc;
+  border-radius: 5px;
+  background: #001622;
+  color: #ffffff;
+  font-family: var(--font-lexend), Lato, Arial, sans-serif;
+  font-size: 14.4px;
+  line-height: 25.6px;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+  pointer-events: auto;
+}
+.a11y-download-notice button {
+  padding: 10px 15px;
+  text-align: start;
+  cursor: pointer;
 }
 .a11y-toolbar [data-panel="structure"] {
   position: fixed;

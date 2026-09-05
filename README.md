@@ -31,6 +31,10 @@ Set `NEXT_PUBLIC_SITE_URL` to change the canonical domain used in metadata, `sit
 
 Set `RACHNA_GPT_IP_HEADER` to the header your trusted proxy uses for the client IP (default `x-real-ip`). Rachna GPT's rate limit is in-memory, so use a shared store in production.
 
+Download Audio generates MP3 speech on the Node server. English uses local Kokoro voices with sentence pauses; other supported languages use eSpeak. `npm run dev` and `npm run build` first run `npm run setup:audio`, which downloads the pinned 92 MB model into `.cache/a11y-audio/` once. Subsequent runs use those files without a network connection. Next.js traces the model and runtime assets for deployment. Allow up to three minutes for long selections; voice and speed follow the accessibility toolbar settings.
+
+Server startup prepares one speech worker using the production synthesis pipeline before handling requests. One prepared worker remains available; surplus workers expire after two idle minutes, with at most two workers alive. Startup preparation adds a one-time startup cost and retains one model in memory. ONNX Runtime is pinned to 1.22.0 for safe use across worker threads. Completed MP3s are cached in memory for ten minutes, with a limit of 32 entries and 32 MiB. Cache keys include selected text, language, voice and speed. A new passage still requires CPU synthesis; a repeated selection with the same settings returns the existing audio. Abort, timeout and failure handling remain active, and cached responses keep the same filename and `no-store` HTTP policy. Server timing logs report cache status, worker readiness, model initialization, inference, encoding and total duration without selected text or request headers.
+
 ## Folder map
 
 ```
