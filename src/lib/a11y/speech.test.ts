@@ -18,6 +18,12 @@ let root: Root;
 let api: ReturnType<typeof useTextToSpeech>;
 let spoken: Utterance[];
 let options: SpeechOptions;
+let wordHighlights: Map<string, { ranges: Range[] }>;
+
+class HighlightMock {
+  ranges: Range[];
+  constructor(...ranges: Range[]) { this.ranges = ranges; }
+}
 
 function Harness() { const speech = useTextToSpeech(options); useEffect(() => { api = speech; }); return null; }
 function run(action: () => void) { act(() => { action(); vi.advanceTimersByTime(100); }); }
@@ -31,8 +37,11 @@ beforeEach(() => {
   vi.spyOn(HTMLElement.prototype, "getClientRects").mockReturnValue([{ width: 100, height: 20 }] as unknown as DOMRectList);
   HTMLElement.prototype.scrollIntoView = vi.fn();
   spoken = [];
+  wordHighlights = new Map();
   options = { ...DEFAULT_SPEECH_OPTIONS, autoPlay: false };
   vi.stubGlobal("SpeechSynthesisUtterance", Utterance);
+  vi.stubGlobal("Highlight", HighlightMock);
+  vi.stubGlobal("CSS", { highlights: wordHighlights });
   vi.stubGlobal("speechSynthesis", {
     cancel: vi.fn(), speak: (utterance: Utterance) => spoken.push(utterance),
     getVoices: () => [{ name: "Microsoft David", lang: "en-US", default: false }, { name: "Microsoft Zira", lang: "en-US", default: true }],
@@ -93,6 +102,22 @@ describe("Text to Speech transport", () => {
     expect(spoken).toHaveLength(0);
     expect(HTMLElement.prototype.scrollIntoView).not.toHaveBeenCalled();
     run(api.togglePlay); expect(last().text).toBe("First sentence.");
+  });
+
+  it("moves the visual highlight to each spoken word and clears it on reset", () => {
+    options = { ...options, autoPlay: true };
+    act(() => root.render(createElement(Harness)));
+    run(() => api.readFrom(document.getElementById("first")!));
+    run(() => last().onboundary?.({ charIndex: 0 }));
+    expect(wordHighlights.get("rcet-tts-word")?.ranges[0]?.toString()).toBe("First");
+    expect(document.getElementById("first")?.hasAttribute("data-tts-word-active")).toBe(true);
+
+    run(() => last().onboundary?.({ charIndex: 6 }));
+    expect(wordHighlights.get("rcet-tts-word")?.ranges[0]?.toString()).toBe("sentence.");
+
+    run(api.reset);
+    expect(wordHighlights.has("rcet-tts-word")).toBe(false);
+    expect(document.getElementById("first")?.hasAttribute("data-tts-word-active")).toBe(false);
   });
 
   it("selects Next and Back silently, cancels playing speech, and clamps boundaries", () => {

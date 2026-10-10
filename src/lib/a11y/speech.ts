@@ -6,6 +6,18 @@ const BLOCK_SELECTOR = "h1, h2, h3, h4, h5, h6, p, li, blockquote, dt, dd, figca
 const HOVER_SELECTOR = "h1, h2, h3, h4, h5, h6, p, li, blockquote, dt, dd, figcaption, a, button, label, summary, td, th";
 const EXCLUDED_SELECTOR = "[aria-hidden='true'], [hidden], .sr-only, .a11y-toolbar, script, style, textarea, input, select, [contenteditable='true']";
 const ACTIVE_ATTRIBUTE = "data-tts-active";
+const WORD_ACTIVE_ATTRIBUTE = "data-tts-word-active";
+const TEXT_BACKGROUND_ATTRIBUTE = "data-tts-text-background";
+const WORD_HIGHLIGHT_NAME = "rcet-tts-word";
+const WORD_HIGHLIGHT_STYLE_ID = "rcet-tts-word-highlight-style";
+
+function ensureWordHighlightStyle() {
+  if (document.getElementById(WORD_HIGHLIGHT_STYLE_ID)) return;
+  const style = document.createElement("style");
+  style.id = WORD_HIGHLIGHT_STYLE_ID;
+  style.textContent = `::highlight(${WORD_HIGHLIGHT_NAME}) { background-color: #000000; color: #ffffff; text-decoration: underline 2px #ffffff; text-underline-offset: 2px; }`;
+  document.head.append(style);
+}
 
 function readableTarget(target: Element): HTMLElement | null {
   if (target.closest(EXCLUDED_SELECTOR)) return null;
@@ -31,10 +43,106 @@ function blockSentences(element: HTMLElement): string[] {
   return sentences(element.innerText.replace(/\s+/g, " "));
 }
 
+function renderedTextMap(element: HTMLElement) {
+  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+  const positions: Array<{ node: Text; offset: number }> = [];
+  let text = "";
+  let current: Node | null;
+
+  while ((current = walker.nextNode())) {
+    const node = current as Text;
+    if (node.parentElement?.closest(EXCLUDED_SELECTOR)) continue;
+    for (let offset = 0; offset < node.data.length; offset += 1) {
+      const character = node.data[offset];
+      if (!character) continue;
+      if (/\s/.test(character)) {
+        if (!text || text.endsWith(" ")) continue;
+        text += " ";
+      } else {
+        text += character;
+      }
+      positions.push({ node, offset });
+    }
+  }
+
+  if (text.endsWith(" ")) {
+    text = text.slice(0, -1);
+    positions.pop();
+  }
+  return { text, positions };
+}
+
+function sentenceStart(text: string, parts: string[], index: number) {
+  let searchFrom = 0;
+  for (let partIndex = 0; partIndex <= index; partIndex += 1) {
+    const part = parts[partIndex];
+    if (!part) continue;
+    const found = text.indexOf(part, searchFrom);
+    if (found < 0) return text.indexOf(parts[index] ?? "");
+    if (partIndex === index) return found;
+    searchFrom = found + part.length;
+  }
+  return -1;
+}
+
+function clearWordHighlight() {
+  if (typeof CSS !== "undefined" && "highlights" in CSS) CSS.highlights.delete(WORD_HIGHLIGHT_NAME);
+  document.querySelector(`[${WORD_ACTIVE_ATTRIBUTE}]`)?.removeAttribute(WORD_ACTIVE_ATTRIBUTE);
+}
+
+function hasBlueBackground(element: HTMLElement) {
+  let current: HTMLElement | null = element;
+  while (current) {
+    const channels = getComputedStyle(current).backgroundColor.match(/[\d.]+/g)?.map(Number);
+    if (channels && channels.length >= 3) {
+      const [red = 0, green = 0, blue = 0, alpha = 1] = channels;
+      if (alpha > 0.05 && blue > red + 20 && blue > green + 12) return true;
+    }
+    current = current.parentElement;
+  }
+  return false;
+}
+
+function highlightWord(element: HTMLElement, parts: string[], partIndex: number, wordOffset: number, charIndex: number) {
+  clearWordHighlight();
+  if (typeof CSS === "undefined" || !("highlights" in CSS) || typeof Highlight === "undefined") return false;
+
+  const mapped = renderedTextMap(element);
+  const part = parts[partIndex];
+  if (!part) return false;
+  const start = sentenceStart(mapped.text, parts, partIndex);
+  if (start < 0) return false;
+  const skipped = wordOffset > 0 ? `${part.split(/\s+/).slice(0, wordOffset).join(" ")} `.length : 0;
+  const localOffset = skipped + charIndex;
+  const words = [...part.matchAll(/\S+/g)];
+  const word = words.find((match) => {
+    const wordStart = match.index ?? -1;
+    return localOffset >= wordStart && localOffset < wordStart + match[0].length;
+  }) ?? words.find((match) => (match.index ?? -1) >= localOffset);
+  if (!word) return false;
+
+  const wordStart = start + (word.index ?? 0);
+  const wordEnd = wordStart + word[0].length;
+  const first = mapped.positions[wordStart];
+  const last = mapped.positions[wordEnd - 1];
+  if (!first || !last) return false;
+
+  const range = document.createRange();
+  range.setStart(first.node, first.offset);
+  range.setEnd(last.node, last.offset + 1);
+  CSS.highlights.set(WORD_HIGHLIGHT_NAME, new Highlight(range));
+  element.setAttribute(WORD_ACTIVE_ATTRIBUTE, "");
+  return true;
+}
+
 function mark(element: HTMLElement | undefined, scroll = true) {
-  document.querySelector(`[${ACTIVE_ATTRIBUTE}]`)?.removeAttribute(ACTIVE_ATTRIBUTE);
+  clearWordHighlight();
+  const previous = document.querySelector(`[${ACTIVE_ATTRIBUTE}]`);
+  previous?.removeAttribute(ACTIVE_ATTRIBUTE);
+  previous?.removeAttribute(TEXT_BACKGROUND_ATTRIBUTE);
   if (!element) return;
   element.setAttribute(ACTIVE_ATTRIBUTE, "");
+  if (!hasBlueBackground(element)) element.setAttribute(TEXT_BACKGROUND_ATTRIBUTE, "");
   if (scroll) {
     const reduced = document.documentElement.dataset.motion === "reduce";
     element.scrollIntoView({ block: "center", behavior: reduced ? "auto" : "smooth" });
@@ -64,6 +172,9 @@ export function useTextToSpeech(options: SpeechOptions = DEFAULT_SPEECH_OPTIONS)
   const wordOffset = useRef(0);
   const [error, setError] = useState("");
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  useEffect(() => {
+    if (typeof CSS !== "undefined" && "highlights" in CSS) ensureWordHighlightStyle();
+  }, []);
   useEffect(() => {
     const sync = () => setVoices(window.speechSynthesis.getVoices());
     sync();
@@ -124,6 +235,7 @@ export function useTextToSpeech(options: SpeechOptions = DEFAULT_SPEECH_OPTIONS)
       return;
     }
     mark(element, scrollOnRead.current);
+    highlightWord(element, parts, position.current.sentence, wordOffset.current, 0);
     const current = generation.current;
     const offset = wordOffset.current;
     const words = text.split(/\s+/);
@@ -132,6 +244,7 @@ export function useTextToSpeech(options: SpeechOptions = DEFAULT_SPEECH_OPTIONS)
     configureRef.current(utterance);
     utterance.onboundary = (event) => {
       if (current !== generation.current) return;
+      highlightWord(element, parts, position.current.sentence, offset, event.charIndex);
       wordOffset.current = offset + spoken.slice(0, event.charIndex).split(/\s+/).filter(Boolean).length;
     };
     utterance.onend = () => {
@@ -180,7 +293,7 @@ export function useTextToSpeech(options: SpeechOptions = DEFAULT_SPEECH_OPTIONS)
   const readHovered = (target: Element) => {
     const element = readableTarget(target);
     if (!element) return;
-    if (hovered.current === element) return;
+    if (hovered.current === element && statusRef.current === "playing") return;
     const available = readableBlocks();
     let index = available.indexOf(element);
     if (index === -1) { available.unshift(element); index = 0; }
