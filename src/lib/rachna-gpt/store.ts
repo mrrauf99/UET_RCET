@@ -22,6 +22,7 @@ export const SERVER_SNAPSHOT: ChatState = Object.freeze({
 
 let state: ChatState = SERVER_SNAPSHOT;
 const listeners = new Set<() => void>();
+let panelReturnFocus: HTMLElement | null = null;
 
 let active: { id: string; controller: AbortController } | null = null;
 let pending = "";
@@ -191,7 +192,15 @@ export function reset() {
   clearStored();
 }
 
-export const openPanel = () => emit({ panelOpen: true });
+export function openPanel(trigger: HTMLElement | null = null) {
+  panelReturnFocus = trigger;
+  emit({ panelOpen: true });
+}
+export const consumePanelReturnFocus = () => {
+  const trigger = panelReturnFocus;
+  panelReturnFocus = null;
+  return trigger;
+};
 export const closePanel = () => emit({ panelOpen: false });
 
 /** Reads sessionStorage once, after mount. Never replaces messages the user has already sent. */

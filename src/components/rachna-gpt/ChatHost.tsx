@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
-import { closePanel, hydrate, openPanel, selectPanelOpen } from "@/lib/rachna-gpt/store";
+import { closePanel, consumePanelReturnFocus, hydrate, openPanel, selectPanelOpen } from "@/lib/rachna-gpt/store";
 import { useChat } from "@/lib/rachna-gpt/use-chat";
 import { scheduleIdle } from "@/lib/schedule-idle";
 import { ChatLauncher } from "./ChatLauncher";
@@ -38,10 +38,11 @@ export function ChatHost() {
     if (panelOpen) wasOpen.current = true;
     else if (wasOpen.current) {
       wasOpen.current = false;
-      launcherRef.current?.focus();
+      const trigger = consumePanelReturnFocus();
+      (trigger?.isConnected && !trigger.closest("[inert]") ? trigger : launcherRef.current)?.focus();
     }
   }, [panelOpen]);
 
   if (onFullPage) return null;
-  return panelOpen ? <ChatPanel /> : <ChatLauncher ref={launcherRef} onOpen={openPanel} onWarm={warmPanel} />;
+  return panelOpen ? <ChatPanel /> : <ChatLauncher ref={launcherRef} onOpen={() => openPanel(launcherRef.current)} onWarm={warmPanel} />;
 }

@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { useId, useRef, useState, type CSSProperties } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { cn } from "@/lib/cn";
+import { closeToolbar, openToolbar } from "@/lib/a11y/store";
+import { openPanel } from "@/lib/rachna-gpt/store";
 import { childHrefs, isCurrentAmong, isCurrentPath } from "@/lib/nav";
 import type { ContentLink, NavItem } from "@/types/content";
 
@@ -31,6 +33,19 @@ export function MobileNav({ items, utilityLinks }: MobileNavProps) {
   };
 
   const closeMenu = () => dialogRef.current?.close();
+  const openAccessibility = () => {
+    const trigger = toggleRef.current;
+    closeMenu();
+    window.setTimeout(() => openToolbar(trigger), 0);
+  };
+  const openChat = () => {
+    const trigger = toggleRef.current;
+    closeMenu();
+    window.setTimeout(() => {
+      closeToolbar();
+      openPanel(trigger);
+    }, 0);
+  };
 
   return (
     <div className="lg:hidden large-text:block!">
@@ -73,6 +88,26 @@ export function MobileNav({ items, utilityLinks }: MobileNavProps) {
           >
             <Icon name="close" className="size-6" />
             <span className="sr-only">Close menu</span>
+          </button>
+        </div>
+
+        <div className="grid gap-2 px-(--space-gutter) pt-4">
+          <button
+            type="button"
+            onClick={openAccessibility}
+            className="flex min-h-12 items-center gap-3 rounded-sm border border-border px-3 text-start font-bold hover:bg-muted focus-visible:bg-muted"
+          >
+            <Icon name="accessibility" className="size-5" />
+            Accessibility tools
+          </button>
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            onClick={openChat}
+            className="flex min-h-12 items-center gap-3 rounded-sm border border-border px-3 text-start font-bold hover:bg-muted focus-visible:bg-muted"
+          >
+            <Icon name="chat" className="size-5" />
+            Open RachnaGPT chat
           </button>
         </div>
 
