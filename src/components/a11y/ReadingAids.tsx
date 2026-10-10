@@ -142,50 +142,44 @@ function ScreenMask({ horizontal, vertical, size, color, edge, opacity }: { hori
   }} className="pointer-events-none fixed left-0 top-0 z-50 print:hidden" />;
 }
 
-function FocusText({ dark }: { dark: boolean }) {
-  const [text, setText] = useState("");
-  const barRef = useRef<HTMLDivElement>(null);
-  const visible = text !== "";
-
-  // Reserves the bar's height at the bottom so keyboard focus never scrolls under it (WCAG 2.4.11).
+function FocusText() {
   useEffect(() => {
-    const bar = barRef.current;
-    if (!visible || !bar) return;
-    const root = document.documentElement;
-    const observer = new ResizeObserver(() => root.style.setProperty("scroll-padding-bottom", `${bar.offsetHeight}px`));
-    observer.observe(bar);
-    return () => {
-      observer.disconnect();
-      root.style.removeProperty("scroll-padding-bottom");
+    let active: HTMLElement | null = null;
+    const clear = () => {
+      active?.removeAttribute("data-focus-text-active");
+      active = null;
+      if (typeof CSS !== "undefined" && "highlights" in CSS) CSS.highlights.delete("rcet-focus-text");
     };
-  }, [visible]);
-
-  useEffect(() => {
-    const show = (event: Event) => {
-      const target = (event.target as Element).closest?.(TEXT_BLOCKS);
-      if (!target || target.closest(".a11y-toolbar")) return;
-      const value = (target as HTMLElement).innerText.trim().replace(/\s+/g, " ");
-      if (value) setText(value.length > 280 ? `${value.slice(0, 280)}…` : value);
+    const focus = (event: Event) => {
+      const source = event.target;
+      if (!(source instanceof Element) || source.closest(".a11y-toolbar")) return;
+      const target = source.closest<HTMLElement>(TEXT_BLOCKS);
+      if (!target || target === active) return;
+      clear();
+      active = target;
+      if (typeof CSS === "undefined" || !("highlights" in CSS) || typeof Highlight === "undefined") {
+        active.setAttribute("data-focus-text-active", "");
+        return;
+      }
+      if (!document.getElementById("rcet-focus-text-style")) {
+        const style = document.createElement("style");
+        style.id = "rcet-focus-text-style";
+        style.textContent = "::highlight(rcet-focus-text) { background-color: #06c; color: #fff; }";
+        document.head.append(style);
+      }
+      const range = document.createRange();
+      range.selectNodeContents(active);
+      CSS.highlights.set("rcet-focus-text", new Highlight(range));
     };
-    document.addEventListener("pointerover", show);
-    document.addEventListener("focusin", show);
+    document.addEventListener("pointerover", focus);
+    document.addEventListener("focusin", focus);
     return () => {
-      document.removeEventListener("pointerover", show);
-      document.removeEventListener("focusin", show);
+      document.removeEventListener("pointerover", focus);
+      document.removeEventListener("focusin", focus);
+      clear();
     };
   }, []);
-
-  if (!text) return null;
-  return (
-    <div
-      ref={barRef}
-      aria-hidden="true"
-      data-dark={dark || undefined}
-      className="a11y-toolbar pointer-events-none fixed inset-x-0 bottom-0 z-50 border-t-4 border-accent px-6 py-4 font-body text-2xl leading-snug shadow-lg print:hidden"
-    >
-      {text}
-    </div>
-  );
+  return null;
 }
 
 function PageFeatures({ descriptions, paused }: { descriptions: boolean; paused: boolean }) {
@@ -208,7 +202,7 @@ export function ReadingAids() {
       <PageFeatures descriptions={prefs.imageDescriptions && !prefs.plainText} paused={resolvedAttribute("data-motion") === "reduce"} />
       {prefs.readingGuide ? <ReadingRuler color={RULER_SWATCHES[prefs.rulerColor]} size={prefs.rulerSize} markings={prefs.rulerMarkings} opacity={prefs.rulerOpacity} /> : null}
       {prefs.readingMask || prefs.maskVertical ? <ScreenMask horizontal={prefs.readingMask} vertical={prefs.maskVertical} size={prefs.maskSize} color={RULER_SWATCHES[prefs.maskColor]} edge={prefs.maskEdge} opacity={prefs.maskOpacity} /> : null}
-      {prefs.focusText ? <FocusText dark={prefs.toolbarDark} /> : null}
+      {prefs.focusText ? <FocusText /> : null}
     </>
   );
 }

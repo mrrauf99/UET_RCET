@@ -47,7 +47,7 @@ export function Choice<T extends string | number>({
 }: {
   legend: string;
   name: string;
-  value: T;
+  value: T | null;
   options: readonly { value: T; label: ReactNode; ariaLabel?: string }[];
   onChange: (value: T) => void;
 }) {

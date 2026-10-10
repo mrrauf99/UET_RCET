@@ -44,7 +44,7 @@ export function SpeechPanel({ enabled, options, movable, error, onToggle, onOpti
       <Stepper legend="Reading Speed:" valueLabel={String(options.rate)} canDecrease={options.rate > 0.5} canIncrease={options.rate < 2} decreaseLabel="Decrease playback speed" increaseLabel="Increase playback speed" onDecrease={() => onOptions({ ...options, rate: Math.max(0.5, Math.round((options.rate - 0.1) * 10) / 10) })} onIncrease={() => onOptions({ ...options, rate: Math.min(2, Math.round((options.rate + 0.1) * 10) / 10) })} />
       <hr className="a11y-divider" />
       <details className="a11y-speech-keyboard"><summary>Keyboard Controls</summary><p>Ctrl + Alt + Z: toggle Text to Speech.<br />Ctrl + Alt + P: play.<br />Ctrl + Alt + S: stop.<br />Ctrl + Right / Left: next / previous.<br />Ctrl + Shift + arrows: move floating controls.</p></details>
-      {error ? <p role="alert" className="text-sm">{error}</p> : null}
+      {error ? <p role="alert" className="text-[14px]">{error}</p> : null}
     </> : null}
     <hr className="a11y-divider" />
     <ResetButton label="Reset Text to Speech Options to default" onClick={onReset} />
@@ -122,11 +122,11 @@ export function VoiceControlPanel({
         checked={listening}
         onChange={onToggle}
       />
-      {status ? <p className="rounded-md border-2 border-(--tb-border) p-3 text-sm">{status}</p> : null}
+      {status ? <p className="rounded-md border-2 border-(--tb-border) p-3 text-[14px]">{status}</p> : null}
       <Switch label="View all Commands" checked={showCommands} onChange={setShowCommands} />
       {showCommands ? <div>
         <h3 className="font-bold">Commands</h3>
-        <dl className="mt-2 divide-y divide-(--tb-border) text-sm">
+        <dl className="mt-2 divide-y divide-(--tb-border) text-[14px]">
           {VOICE_COMMANDS.map((command) => (
             <div key={command.say} className="py-2">
               <dt className="font-bold">“{command.say}”</dt>
@@ -254,7 +254,7 @@ export function TranslationPanel({ announce }: { announce: Announce }) {
         }
       }}>Reset to default</button>
       {error ? (
-        <p role="alert" className="rounded-md border-2 border-(--tb-accent) p-3 text-sm">
+        <p role="alert" className="rounded-md border-2 border-(--tb-accent) p-3 text-[14px]">
           {error}
         </p>
       ) : null}
@@ -286,21 +286,21 @@ export function TranslationPanel({ announce }: { announce: Announce }) {
             >
               <span className="flex min-w-0 flex-col gap-1">
                 <span>{language.name}</span>
-                <span lang={language.code} dir="auto" className="text-sm">{language.native}</span>
+                <span lang={language.code} dir="auto" className="text-[14px]">{language.native}</span>
               </span>
               {pending === language.code ? (
-                <span className="text-sm">Translating…</span>
+                <span className="text-[14px]">Translating…</span>
               ) : active === language.code ? <Icon name="check" /> : null}
             </button>
           </li>
         ))}
-        {visible.length === 0 ? <li className="py-2 text-sm">No language matches “{query}”.</li> : null}
+        {visible.length === 0 ? <li className="py-2 text-[14px]">No language matches “{query}”.</li> : null}
       </ul>
       <button type="button" className="a11y-language-top" onClick={() => {
         searchRef.current?.closest<HTMLElement>("[data-panel]")?.scrollTo({ top: 0 });
         searchRef.current?.focus({ preventScroll: true });
       }}><Icon name="send" className="size-4" />Back to top</button>
-      <p className="text-sm text-(--tb-muted)">Translated with Google Translate. Machine translation can contain errors.</p>
+      <p className="text-[14px] text-(--tb-muted)">Translated with Google Translate. Machine translation can contain errors.</p>
     </div>
   );
 }
@@ -414,15 +414,15 @@ export function CursorPanel({ prefs, announce }: PrefsPanelProps) {
         onChange={(cursor) => set({ cursor }, announce, `Cursor ${cursor === "x-large" ? "extra large" : cursor}`)}
       />
       <hr className="a11y-divider" />
-      <Choice
+      <Choice<"white" | "black">
         legend="Cursor Colour"
         name="cursor-colour"
-        value={prefs.cursorColor}
+        value={prefs.cursor === "default" ? null : prefs.cursorColor}
         options={[
           { value: "white", label: "White" },
           { value: "black", label: "Black" },
         ]}
-        onChange={(cursorColor) => set({ cursorColor }, announce, `Cursor colour ${cursorColor}`)}
+        onChange={(cursorColor) => set({ cursor: prefs.cursor === "default" ? "small" : prefs.cursor, cursorColor }, announce, `Cursor colour ${cursorColor}`)}
       />
       <ResetButton label="Reset cursor to system default" onClick={() => set({ cursor: DEFAULT_PREFS.cursor, cursorColor: DEFAULT_PREFS.cursorColor }, announce, "Cursor reset to system default")} />
     </>

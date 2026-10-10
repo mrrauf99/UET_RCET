@@ -8,6 +8,7 @@ import { clearOutlineHighlight, type StructureView } from "@/lib/a11y/page-struc
 import { DEFAULT_SPEECH_OPTIONS, isSpeechSupported, useTextToSpeech } from "@/lib/a11y/speech";
 import { useAudioDownload } from "@/lib/a11y/audio-download";
 import { closeToolbar, resetPrefs, updatePrefs, useA11yState } from "@/lib/a11y/store";
+import { currentTranslation, showOriginal } from "@/lib/a11y/translate";
 import { isVoiceControlSupported, startVoiceControl } from "@/lib/a11y/voice-control";
 import { ToolbarIcon, type ToolbarIconName } from "./ToolbarIcon";
 import {
@@ -53,6 +54,7 @@ const PANEL_TITLES: Record<PanelId, string> = {
 
 interface ToolButtonProps {
   label: string;
+  caption?: string;
   tooltipLabel?: string;
   color: string;
   icon?: ToolbarIconName;
@@ -71,7 +73,7 @@ interface ToolButtonProps {
   buttonRef?: (element: HTMLButtonElement | null) => void;
 }
 
-function ToolButton({ label, tooltipLabel, color, icon, text, pressed, active, expanded, controls, disabled, busy, onPointerDown, onClick, onFocus, tabIndex, buttonRef }: ToolButtonProps) {
+function ToolButton({ label, caption, tooltipLabel, color, icon, text, pressed, active, expanded, controls, disabled, busy, onPointerDown, onClick, onFocus, tabIndex, buttonRef }: ToolButtonProps) {
   const highlighted = pressed || active || expanded;
   return (
     <button
@@ -100,7 +102,8 @@ function ToolButton({ label, tooltipLabel, color, icon, text, pressed, active, e
       )}
     >
       {icon ? <ToolbarIcon name={icon} className="size-6 lg:size-8" /> : null}
-      {text ? <span className="font-display text-lg leading-none font-semibold lg:text-2xl">{text}</span> : null}
+      {text ? <span className="a11y-tool-label font-display leading-none font-semibold">{text}</span> : null}
+      <span className="a11y-tool-caption" aria-hidden="true">{caption ?? label}</span>
     </button>
   );
 }
@@ -127,7 +130,7 @@ function PageButton({ direction, onClick }: { direction: "prev" | "next"; onClic
       data-label={label}
       aria-label={label}
       onClick={onClick}
-      className="grid size-11 shrink-0 place-items-center rounded-full hover:bg-(--tb-hover)"
+      className="a11y-toolbar-page-button grid size-11 shrink-0 place-items-center rounded-full hover:bg-(--tb-hover)"
     >
       <ToolbarIcon name={direction === "prev" ? "chevron-left" : "chevron-right"} className="size-7" />
     </button>
@@ -142,6 +145,8 @@ export function A11yToolbar() {
   const [focusIndex, setFocusIndex] = useState(0);
   const [edges, setEdges] = useState({ prev: false, next: false });
   const [message, setMessage] = useState("");
+  const [imageNotice, setImageNotice] = useState("");
+  const [closeConfirmation, setCloseConfirmation] = useState(false);
   const [ttsOn, setTtsOn] = useState(false);
   const [speechOptions, setSpeechOptions] = useState(DEFAULT_SPEECH_OPTIONS);
   const [movablePlayer, setMovablePlayer] = useState(false);
@@ -155,11 +160,16 @@ export function A11yToolbar() {
   const [voiceStatus, setVoiceStatus] = useState("");
   const [tip, setTip] = useState<{ label: string; x: number; y: number; above: boolean; shown: boolean; glide: boolean } | null>(null);
   const [playerOffset, setPlayerOffset] = useState({ x: 0, y: 0 });
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const cancelCloseRef = useRef<HTMLButtonElement>(null);
+  const confirmCloseRef = useRef<HTMLButtonElement>(null);
+  const imageNoticeTimer = useRef<number | undefined>(undefined);
   const playerRef = useRef<HTMLFieldSetElement>(null);
   const playerDrag = useRef<{ pointerX: number; pointerY: number; offset: { x: number; y: number }; rect: DOMRect } | null>(null);
   const playerDragged = useRef(false);
 
   const barRef = useRef<HTMLElement>(null);
+  const layoutRef = useRef<HTMLDivElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const tipRef = useRef<HTMLDivElement>(null);
   const panelButtons = useRef(new Map<PanelId, HTMLButtonElement>());
@@ -173,7 +183,27 @@ export function A11yToolbar() {
     setTip((current) => (current?.shown ? { ...current, shown: false } : current));
   };
   const panelId = useId();
+  const closeConfirmationId = useId();
   const tts = useTextToSpeech(speechOptions);
+  const onCloseDialogKeyDown = useEffectEvent((event: globalThis.KeyboardEvent) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setCloseConfirmation(false);
+      closeButtonRef.current?.focus();
+      return;
+    }
+    if (event.key !== "Tab") return;
+    const first = confirmCloseRef.current;
+    const last = cancelCloseRef.current;
+    if (!first || !last) return;
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
 
   useEffect(() => {
     if (panel !== "structure") return;
@@ -197,9 +227,20 @@ export function A11yToolbar() {
     };
   }, []);
 
+  useEffect(() => () => window.clearTimeout(imageNoticeTimer.current), []);
+
   useEffect(() => {
-    toolbarRef.current?.querySelector<HTMLButtonElement>("[data-tool]")?.focus();
-  }, []);
+    if (closeConfirmation) cancelCloseRef.current?.focus();
+  }, [closeConfirmation]);
+
+  useEffect(() => {
+    if (!closeConfirmation) return;
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      onCloseDialogKeyDown(event);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [closeConfirmation]);
 
   // Tools wrap onto more rows on narrow screens, so the page offset follows the bar's real height.
   useEffect(() => {
@@ -217,7 +258,7 @@ export function A11yToolbar() {
   const updateEdges = () => {
     const row = toolbarRef.current;
     if (!row) return;
-    const more = { prev: row.scrollLeft > 1, next: row.scrollLeft + row.clientWidth < row.scrollWidth - 1 };
+    const more = { prev: row.scrollLeft > 4, next: row.scrollLeft + row.clientWidth < row.scrollWidth - 1 };
     setEdges((current) => (current.prev === more.prev && current.next === more.next ? current : more));
   };
   const syncEdges = useEffectEvent(updateEdges);
@@ -344,16 +385,21 @@ export function A11yToolbar() {
   const announce = (text: string) => {
     setMessage("");
     requestAnimationFrame(() => setMessage(text));
+    if (text.startsWith("Images hidden on page.") || text === "Images shown") {
+      window.clearTimeout(imageNoticeTimer.current);
+      setImageNotice(text);
+      imageNoticeTimer.current = window.setTimeout(() => setImageNotice(""), 6000);
+    }
   };
 
   const positionPanel = (id: PanelId) => {
     const button = panelButtons.current.get(id);
-    const bar = barRef.current?.getBoundingClientRect();
-    if (button && bar) {
-      const left = button.getBoundingClientRect().left - bar.left;
+    const layout = layoutRef.current?.getBoundingClientRect();
+    if (button && layout) {
+      const left = button.getBoundingClientRect().left - layout.left;
       const width = Math.min(300, innerWidth - 16);
       const anchor = id === "page" ? left : left + button.offsetWidth / 2 - width / 2;
-      setPanelLeft(Math.max(8, Math.min(anchor, bar.width - width - 8)));
+      setPanelLeft(Math.max(8, Math.min(anchor, layout.width - width - 8)));
     }
   };
   const togglePanel = (id: PanelId) => {
@@ -438,7 +484,14 @@ export function A11yToolbar() {
     setFocusSound((current) => ({ ...current, playing: false }));
     setListening(false);
     setPanel(null);
+    resetPrefs();
     closeToolbar();
+    window.location.reload();
+  };
+
+  const cancelClose = () => {
+    setCloseConfirmation(false);
+    closeButtonRef.current?.focus();
   };
 
   const movePlayer = (from: { x: number; y: number }, rect: DOMRect, dx: number, dy: number) => {
@@ -616,22 +669,25 @@ export function A11yToolbar() {
         Skip toolbar to main content
       </a>
 
-      <div className="flex items-center gap-2 px-4 lg:gap-3 lg:px-6" {...tipHandlers}>
-        {edges.prev ? <PageButton direction="prev" onClick={() => page(-1)} /> : null}
-        <div
-          ref={toolbarRef}
-          role="toolbar"
-          aria-label="Accessibility tools"
-          tabIndex={-1}
-          onKeyDown={onToolbarKeyDown}
-          onScroll={() => {
-            hideTip();
-            updateEdges();
-          }}
-          className="a11y-tools flex min-w-0 flex-1 items-center gap-2 overflow-x-auto px-1 pt-2 pb-3 lg:gap-3"
-        >
+      <div ref={layoutRef} className="a11y-toolbar-layout relative z-[56] flex items-center gap-2 px-4 lg:gap-3 lg:px-6" {...tipHandlers}>
+        <div className="a11y-toolbar-tool-row flex min-w-0 flex-1 items-center gap-2">
+          {edges.prev ? <PageButton direction="prev" onClick={() => page(-1)} /> : null}
+          <div
+            id="a11y-toolbar-tools"
+            ref={toolbarRef}
+            role="toolbar"
+            aria-label="Accessibility tools"
+            tabIndex={-1}
+            onKeyDown={onToolbarKeyDown}
+            onScroll={() => {
+              hideTip();
+              updateEdges();
+            }}
+            className="a11y-tools flex min-w-0 flex-1 items-center gap-2 overflow-x-auto px-1 pt-2 pb-3 lg:gap-3"
+          >
           <ToolButton
             label={support.speech ? "Text to Speech" : "Text to Speech (not supported in this browser)"}
+            caption="Speech"
             icon="speak"
             color="--tool-listen"
             active={ttsOn}
@@ -641,20 +697,22 @@ export function A11yToolbar() {
             {...rove()}
           />
           {ttsOn && !movablePlayer ? player : null}
-          <ToolButton label={focusSound.playing ? "Focus audio (on)" : "Focus audio"} icon="music" color="--tool-listen" active={focusSound.playing} {...panelTool("audio")} {...rove()} />
-          <ToolButton label={listening ? "Voice control (on)" : "Voice control"} icon="mic" color="--tool-listen" active={listening} {...panelTool("voice")} {...rove()} />
+          <ToolButton label={focusSound.playing ? "Focus audio (on)" : "Focus audio"} caption="Audio" icon="music" color="--tool-listen" active={focusSound.playing} {...panelTool("audio")} {...rove()} />
+          <ToolButton label={listening ? "Voice control (on)" : "Voice control"} caption="Voice" icon="mic" color="--tool-listen" active={listening} {...panelTool("voice")} {...rove()} />
 
           <ToolButton
             label="Decrease text size"
+            caption="Less"
             icon="minus"
             color="--tool-text"
             disabled={textIndex <= 0}
             onClick={() => setTextScale(textIndex - 1)}
             {...rove()}
           />
-          <ToolButton label="Font options" text="Aa" color="--tool-text" {...panelTool("font")} {...rove()} />
+          <ToolButton label="Font options" caption="Font" text="Aa" color="--tool-text" {...panelTool("font")} {...rove()} />
           <ToolButton
             label="Focus text (FT)"
+            caption="Focus"
             text="FT"
             color="--tool-text"
             pressed={prefs.focusText}
@@ -666,6 +724,7 @@ export function A11yToolbar() {
           />
           <ToolButton
             label="Increase text size"
+            caption="More"
             icon="plus"
             color="--tool-text"
             disabled={textIndex >= TEXT_SCALES.length - 1}
@@ -673,17 +732,18 @@ export function A11yToolbar() {
             {...rove()}
           />
 
-          <ToolButton label="Translation" icon="translate" color="--tool-language" {...panelTool("translate")} {...rove()} />
-          <ToolButton label="Colour theme" icon="palette" color="--tool-colour" active={prefs.grayscale || prefs.colorPreset !== "none"} {...panelTool("colour")} {...rove()} />
-          <ToolButton label={prefs.readingGuide ? "Ruler options (on)" : "Ruler options"} icon="ruler" color="--tool-ruler" active={prefs.readingGuide} {...panelTool("ruler")} {...rove()} />
-          <ToolButton label="Cursor options" icon="cursor" color="--tool-cursor" {...panelTool("cursor")} {...rove()} />
-          <ToolButton label={(prefs.readingMask || prefs.maskVertical) ? "Screen mask (on)" : "Screen mask"} icon="mask" color="--tool-mask" active={prefs.readingMask || prefs.maskVertical} {...panelTool("mask")} {...rove()} />
-          <ToolButton label="Page options" icon="options" color="--tool-page" active={prefs.plainText || prefs.hideImages || prefs.imageDescriptions || prefs.motion === "reduce"} {...panelTool("page")} {...rove()} />
-          <ToolButton label="Page structure" icon="structure" color="--tool-page" {...panelTool("structure")} {...rove()} />
-          <ToolButton label="Download Audio File" tooltipLabel="Download Audio" icon="download" color="--tool-download" active={audioDownload.waiting} disabled={audioDownload.busy} busy={audioDownload.busy} onPointerDown={audioDownload.captureSelection} onClick={() => { setPanel(null); audioDownload.download(); }} {...rove()} />
+          <ToolButton label="Translation" caption="Lang" icon="translate" color="--tool-language" {...panelTool("translate")} {...rove()} />
+          <ToolButton label="Colour theme" caption="Colour" icon="palette" color="--tool-colour" active={prefs.grayscale || prefs.colorPreset !== "none"} {...panelTool("colour")} {...rove()} />
+          <ToolButton label={prefs.readingGuide ? "Ruler options (on)" : "Ruler options"} caption="Ruler" icon="ruler" color="--tool-ruler" active={prefs.readingGuide} {...panelTool("ruler")} {...rove()} />
+          <ToolButton label="Cursor options" caption="Cursor" icon="cursor" color="--tool-cursor" {...panelTool("cursor")} {...rove()} />
+          <ToolButton label={(prefs.readingMask || prefs.maskVertical) ? "Screen mask (on)" : "Screen mask"} caption="Mask" icon="mask" color="--tool-mask" active={prefs.readingMask || prefs.maskVertical} {...panelTool("mask")} {...rove()} />
+          <ToolButton label="Page options" caption="Page options" icon="options" color="--tool-page" active={prefs.plainText || prefs.hideImages || prefs.imageDescriptions || prefs.motion === "reduce"} {...panelTool("page")} {...rove()} />
+          <ToolButton label="Page structure" caption="Outline" icon="structure" color="--tool-page" {...panelTool("structure")} {...rove()} />
+          <ToolButton label="Download Audio File" caption="Save audio" tooltipLabel="Download Audio" icon="download" color="--tool-download" active={audioDownload.waiting} disabled={audioDownload.busy} busy={audioDownload.busy} onPointerDown={audioDownload.captureSelection} onClick={() => { setPanel(null); audioDownload.download(); }} {...rove()} />
 
           <ToolButton
             label="Reset all settings"
+            caption="Reset"
             icon="reset"
             color="--tool-colour"
             onClick={() => {
@@ -699,12 +759,20 @@ export function A11yToolbar() {
               setVoiceStatus("");
               setPanel(null);
               setStructureView("headings");
+              requestAnimationFrame(() => {
+                const row = toolbarRef.current;
+                row?.scrollTo({ left: 0, behavior: "instant" });
+                row?.querySelector<HTMLButtonElement>("[data-tool]")?.focus({ preventScroll: true });
+                updateEdges();
+              });
               announce("All settings reset");
+              if (currentTranslation()) showOriginal();
             }}
             {...rove()}
           />
+          </div>
+          {edges.next ? <PageButton direction="next" onClick={() => page(1)} /> : null}
         </div>
-        {edges.next ? <PageButton direction="next" onClick={() => page(1)} /> : null}
 
         {/* Rendered straight after the tools so Tab moves from the open tool into its panel. */}
         {panel ? (
@@ -715,8 +783,8 @@ export function A11yToolbar() {
             style={{ left: panelLeft }}
             className="a11y-panel pop-in absolute top-full z-[80] flex flex-col overflow-y-auto bg-(--tb-bg)"
           >
-            <div className="flex items-center justify-between gap-3">
-              <h2 id={`${panelId}-title`} className="text-xl">
+            <div className={cn("flex items-center justify-between gap-3", panel === "structure" && "a11y-structure-header")}>
+              <h2 id={`${panelId}-title`} className="text-[20px]">
                 {PANEL_TITLES[panel]}
               </h2>
               {panel === "structure" || panel === "colour" ? <button type="button" aria-label={`Close ${PANEL_TITLES[panel]}`} onClick={closePanel} className={cn("grid size-11 shrink-0 place-items-center rounded-full hover:bg-(--tb-hover)", panel === "structure" && "a11y-structure-close")}><ToolbarIcon name="close" className="size-5" /></button> : null}
@@ -725,7 +793,7 @@ export function A11yToolbar() {
           </section>
         ) : null}
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="a11y-toolbar-utility flex shrink-0 items-center gap-2">
           <button
             type="button"
             aria-pressed={prefs.toolbarDark}
@@ -737,20 +805,52 @@ export function A11yToolbar() {
             <ToolbarIcon name={prefs.toolbarDark ? "sun" : "moon"} className="size-5" />
           </button>
           <p className="hidden items-baseline gap-1 font-display leading-none select-none lg:flex" aria-hidden="true">
-            <span className="text-2xl font-bold text-(--tb-accent)">RCET</span>
-            <span className="text-sm font-semibold">Accessibility</span>
+            <span className="text-[24px] font-bold text-(--tb-accent)">RCET</span>
+            <span className="text-[14px] font-semibold">Accessibility</span>
           </p>
           <button
             type="button"
+            ref={closeButtonRef}
             aria-label="Close accessibility toolbar"
             data-label="Close toolbar"
-            onClick={close}
+            onClick={() => setCloseConfirmation(true)}
             className="grid size-11 place-items-center rounded-sm hover:bg-(--tb-hover)"
           >
             <ToolbarIcon name="close" className="size-7" />
           </button>
         </div>
       </div>
+
+      {imageNotice ? (
+        <div className="a11y-image-notice">
+          <span>{imageNotice}</span>
+          <button type="button" aria-label="Dismiss image visibility notice" onClick={() => setImageNotice("")}>
+            <ToolbarIcon name="close" className="size-5" />
+          </button>
+        </div>
+      ) : null}
+
+      {closeConfirmation ? (
+        <div className="a11y-close-scrim">
+          <section
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby={`${closeConfirmationId}-title`}
+            aria-describedby={`${closeConfirmationId}-description`}
+            className="a11y-close-dialog"
+          >
+            <h2 id={`${closeConfirmationId}-title`}>Close Toolbar?</h2>
+            <div id={`${closeConfirmationId}-description`}>
+              <p>This will reset your accessibility settings and refresh the page. Unsaved data may be lost.</p>
+              <p>Are you sure you wish to continue?</p>
+            </div>
+            <div className="a11y-close-actions">
+              <button ref={confirmCloseRef} type="button" onClick={close}>Yes</button>
+              <button ref={cancelCloseRef} type="button" onClick={cancelClose}>Cancel</button>
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       {ttsOn && movablePlayer ? player : null}
 

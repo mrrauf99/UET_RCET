@@ -1,7 +1,7 @@
 export const STORAGE_KEY = "rcet:a11y:v1";
 export const TOOLBAR_STORAGE_KEY = "rcet:a11y:toolbar";
 
-export const TEXT_SCALES = [87.5, 100, 112.5, 125, 150, 175, 200] as const;
+export const TEXT_SCALES = [50, 62.5, 75, 87.5, 100, 112.5, 125, 150, 175, 200] as const;
 export const LINE_HEIGHTS = [0, 1.8, 2.2, 2.6] as const;
 export const LETTER_SPACINGS = [0, 0.06, 0.12, 0.2] as const;
 const FONTS = ["default", "lexend", "arial", "verdana", "comic-sans", "georgia", "tahoma", "lato", "trebuchet", "open-dyslexic"] as const;
@@ -110,7 +110,7 @@ export function applyPreferences(raw: unknown): A11yPrefs {
       ["none", "black-white", "black-yellow", "green-white", "blue-white", "orange-white", "blue-yellow", "dark-grey-light-grey", "grey-white", "purple-white", "dark-red-white", "off-white-black", "grey-dark-grey", "cream-black", "yellow-black", "yellow-blue", "white-red", "white-brown", "white-green", "white-blue", "white-black"] as const,
       "none",
     ),
-    textScale: pick(source.textScale, [87.5, 100, 112.5, 125, 150, 175, 200] as const, 100),
+    textScale: pick(source.textScale, [50, 62.5, 75, 87.5, 100, 112.5, 125, 150, 175, 200] as const, 100),
     lineHeight: pick(source.lineHeight, [0, 1.8, 2.2, 2.6] as const, 0),
     letterSpacing: pick(source.letterSpacing, [0, 0.06, 0.12, 0.2] as const, 0),
     font: pick(source.font, ["default", "lexend", "arial", "verdana", "comic-sans", "georgia", "tahoma", "lato", "trebuchet", "open-dyslexic"] as const, "default"),
