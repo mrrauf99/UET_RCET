@@ -9,6 +9,7 @@ import { DEFAULT_SPEECH_OPTIONS, isSpeechSupported, useTextToSpeech } from "@/li
 import { useAudioDownload } from "@/lib/a11y/audio-download";
 import { closeToolbar, resetPrefs, updatePrefs, useA11yState } from "@/lib/a11y/store";
 import { currentTranslation, showOriginal } from "@/lib/a11y/translate";
+import { translateWord } from "@/lib/a11y/word-translation";
 import { isVoiceControlSupported, startVoiceControl } from "@/lib/a11y/voice-control";
 import { ToolbarIcon, type ToolbarIconName } from "./ToolbarIcon";
 import {
@@ -145,6 +146,8 @@ export function A11yToolbar() {
   const [focusIndex, setFocusIndex] = useState(0);
   const [edges, setEdges] = useState({ prev: false, next: false });
   const [message, setMessage] = useState("");
+  const [hoverLanguage, setHoverLanguage] = useState<string | null>(null);
+  const [wordTip, setWordTip] = useState<{ word: string; translation: string; x: number; y: number; loading: boolean } | null>(null);
   const [imageNotice, setImageNotice] = useState("");
   const [closeConfirmation, setCloseConfirmation] = useState(false);
   const [ttsOn, setTtsOn] = useState(false);
@@ -167,6 +170,7 @@ export function A11yToolbar() {
   const playerRef = useRef<HTMLFieldSetElement>(null);
   const playerDrag = useRef<{ pointerX: number; pointerY: number; offset: { x: number; y: number }; rect: DOMRect } | null>(null);
   const playerDragged = useRef(false);
+  const wordRequest = useRef<AbortController | null>(null);
 
   const barRef = useRef<HTMLElement>(null);
   const layoutRef = useRef<HTMLDivElement>(null);
@@ -185,6 +189,81 @@ export function A11yToolbar() {
   const panelId = useId();
   const closeConfirmationId = useId();
   const tts = useTextToSpeech(speechOptions);
+  const changeHoverLanguage = (language: string | null) => {
+    wordRequest.current?.abort();
+    setWordTip(null);
+    setHoverLanguage(language);
+  };
+
+  useEffect(() => {
+    if (!hoverLanguage) {
+      wordRequest.current?.abort();
+      return;
+    }
+    let timer: number | undefined;
+    let lastWord = "";
+    const getWord = (x: number, y: number) => {
+      const doc = document as Document & { caretRangeFromPoint?: (x: number, y: number) => Range | null; caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } | null };
+      const range = doc.caretRangeFromPoint?.(x, y);
+      const position = range ? { node: range.startContainer, offset: range.startOffset } : (() => {
+        const caret = doc.caretPositionFromPoint?.(x, y);
+        return caret ? { node: caret.offsetNode, offset: caret.offset } : null;
+      })();
+      if (!position || position.node.nodeType !== Node.TEXT_NODE) return "";
+      const value = position.node.textContent ?? "";
+      for (const match of value.matchAll(/[\p{L}\p{M}\p{N}][\p{L}\p{M}\p{N}'’-]*/gu)) {
+        const start = match.index ?? 0;
+        if (position.offset >= start && position.offset <= start + match[0].length) return match[0].slice(0, 60);
+      }
+      return "";
+    };
+    const onMove = (event: PointerEvent) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target) return;
+      if (event.pointerType === "touch" || barRef.current?.contains(target) || playerRef.current?.contains(target) || target.closest("button, a, input, select, textarea, [contenteditable='true']")) {
+        window.clearTimeout(timer);
+        lastWord = "";
+        setWordTip(null);
+        return;
+      }
+      const word = getWord(event.clientX, event.clientY);
+      if (!word || word === lastWord) return;
+      lastWord = word;
+      window.clearTimeout(timer);
+      wordRequest.current?.abort();
+      setWordTip({ word, translation: "", x: event.clientX, y: event.clientY, loading: true });
+      const { clientX: x, clientY: y } = event;
+      timer = window.setTimeout(async () => {
+        const controller = new AbortController();
+        wordRequest.current = controller;
+        try {
+          const translation = await translateWord(word, hoverLanguage, "en", controller.signal);
+          setWordTip((current) => current?.word === word ? { word, translation, x, y, loading: false } : current);
+        } catch {
+          if (!controller.signal.aborted) setWordTip((current) => current?.word === word ? { word, translation: "Translation unavailable", x, y, loading: false } : current);
+        }
+      }, 300);
+    };
+    const onLeave = () => {
+      window.clearTimeout(timer);
+      wordRequest.current?.abort();
+      lastWord = "";
+      setWordTip(null);
+    };
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") onLeave();
+    };
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerleave", onLeave);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.clearTimeout(timer);
+      wordRequest.current?.abort();
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerleave", onLeave);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [hoverLanguage]);
   const onCloseDialogKeyDown = useEffectEvent((event: globalThis.KeyboardEvent) => {
     if (event.key === "Escape") {
       event.preventDefault();
@@ -247,7 +326,7 @@ export function A11yToolbar() {
     const bar = barRef.current;
     if (!bar) return;
     const root = document.documentElement;
-    const observer = new ResizeObserver(() => root.style.setProperty("--toolbar-offset", `${bar.offsetHeight}px`));
+    const observer = new ResizeObserver(() => root.style.setProperty("--toolbar-offset", `${bar.getBoundingClientRect().bottom}px`));
     observer.observe(bar);
     return () => {
       observer.disconnect();
@@ -625,7 +704,7 @@ export function A11yToolbar() {
     ),
     voice: <VoiceControlPanel supported={support.voice} listening={listening} status={voiceStatus} onToggle={toggleVoice} />,
     font: <FontPanel prefs={prefs} announce={announce} />,
-    translate: <TranslationPanel announce={announce} />,
+    translate: <TranslationPanel announce={announce} hoverLanguage={hoverLanguage} onHoverLanguageChange={changeHoverLanguage} />,
     colour: <ColourPanel prefs={prefs} announce={announce} />,
     ruler: <RulerPanel prefs={prefs} announce={announce} />,
     cursor: <CursorPanel prefs={prefs} announce={announce} />,
@@ -702,7 +781,7 @@ export function A11yToolbar() {
 
           <ToolButton
             label="Decrease text size"
-            caption="Less"
+            caption="Smaller"
             icon="minus"
             color="--tool-text"
             disabled={textIndex <= 0}
@@ -712,7 +791,7 @@ export function A11yToolbar() {
           <ToolButton label="Font options" caption="Font" text="Aa" color="--tool-text" {...panelTool("font")} {...rove()} />
           <ToolButton
             label="Focus text (FT)"
-            caption="Focus"
+            caption="Focus text"
             text="FT"
             color="--tool-text"
             pressed={prefs.focusText}
@@ -724,7 +803,7 @@ export function A11yToolbar() {
           />
           <ToolButton
             label="Increase text size"
-            caption="More"
+            caption="Larger"
             icon="plus"
             color="--tool-text"
             disabled={textIndex >= TEXT_SCALES.length - 1}
@@ -814,9 +893,9 @@ export function A11yToolbar() {
             aria-label="Close accessibility toolbar"
             data-label="Close toolbar"
             onClick={() => setCloseConfirmation(true)}
-            className="grid size-11 place-items-center rounded-sm hover:bg-(--tb-hover)"
+            className="grid size-11 place-items-center"
           >
-            <ToolbarIcon name="close" className="size-7" />
+            <ToolbarIcon name="close" className="size-6" />
           </button>
         </div>
       </div>
@@ -828,6 +907,16 @@ export function A11yToolbar() {
             <ToolbarIcon name="close" className="size-5" />
           </button>
         </div>
+      ) : null}
+
+      {wordTip ? (
+        <output
+          style={{ left: Math.min(Math.max(wordTip.x, 120), innerWidth - 120), top: Math.max(wordTip.y - 12, 12) }}
+          className="fixed z-[100] max-w-[min(18rem,calc(100vw-1.5rem))] -translate-x-1/2 -translate-y-full rounded-md border-2 border-(--tb-border) bg-(--tb-bg) px-3 py-2 text-sm text-(--tb-fg) shadow-lg"
+        >
+          <span className="block text-xs text-(--tb-muted)">{wordTip.word}</span>
+          {wordTip.loading ? "Translating…" : wordTip.translation}
+        </output>
       ) : null}
 
       {closeConfirmation ? (

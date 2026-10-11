@@ -216,7 +216,7 @@ export function FontPanel({ prefs, announce }: PrefsPanelProps) {
   );
 }
 
-export function TranslationPanel({ announce }: { announce: Announce }) {
+export function TranslationPanel({ announce, hoverLanguage, onHoverLanguageChange }: { announce: Announce; hoverLanguage: string | null; onHoverLanguageChange: (language: string | null) => void }) {
   const [query, setQuery] = useState("");
   // Panels render only in the browser (the toolbar is closed during server rendering).
   const [active, setActive] = useState(currentTranslation);
@@ -234,6 +234,7 @@ export function TranslationPanel({ announce }: { announce: Announce }) {
     try {
       await translatePage(language.code);
       setActive(language.code);
+      onHoverLanguageChange(language.code.startsWith("en") ? null : language.code);
       announce(`Page translated to ${language.name}`);
     } catch {
       setError("Translation could not start. Check your connection and try again.");
@@ -244,6 +245,13 @@ export function TranslationPanel({ announce }: { announce: Announce }) {
 
   return (
     <div className="a11y-translation-controls">
+      <Switch
+        label="Translate words on hover"
+        description={active && !active.startsWith("en") ? "Hover over a translated word to see its English translation." : "Choose a translated page language first to enable word translations."}
+        checked={hoverLanguage !== null}
+        disabled={active === null || active.startsWith("en")}
+        onChange={(enabled) => onHoverLanguageChange(enabled && active && !active.startsWith("en") ? active : null)}
+      />
       <button type="button" className="a11y-panel-reset" aria-label="Reset translation to original English" aria-disabled={pending !== null || undefined} onClick={() => {
         if (pending) return;
         if (active) showOriginal();

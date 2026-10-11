@@ -8,11 +8,13 @@ export function Switch({
   description,
   checked,
   onChange,
+  disabled = false,
 }: {
   label: string;
   description?: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
+  disabled?: boolean;
 }) {
   const descriptionId = useId();
   return (
@@ -22,9 +24,11 @@ export function Switch({
         <input
           type="checkbox"
           checked={checked}
+          disabled={disabled}
           aria-describedby={description ? descriptionId : undefined}
           onChange={(event) => onChange(event.target.checked)}
           onKeyDown={(event) => {
+            if (disabled) return;
             if (event.key === "Enter") { event.preventDefault(); onChange(!checked); }
           }}
         />
