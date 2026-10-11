@@ -46,3 +46,4 @@ skills-lock.json
 .claude/
 *.md
 !README.md
+.codex/

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef } from "react";
 import { RULER_SWATCHES } from "@/lib/a11y/prefs";
 import { observeImageDescriptions, pausePageMedia } from "@/lib/a11y/page-effects";
 import { resolvedAttribute, useA11yState } from "@/lib/a11y/store";
