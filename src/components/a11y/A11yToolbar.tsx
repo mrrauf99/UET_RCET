@@ -632,7 +632,9 @@ export function A11yToolbar() {
       return;
     }
     if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-    const tools = [...(toolbarRef.current?.querySelectorAll<HTMLButtonElement>("[data-tool]") ?? [])];
+    const tools = [...(toolbarRef.current?.querySelectorAll<HTMLButtonElement>("[data-tool]") ?? [])].filter(
+      (tool) => tool.getClientRects().length > 0,
+    );
     const current = tools.indexOf(document.activeElement as HTMLButtonElement);
     if (current < 0) return;
     const next =
