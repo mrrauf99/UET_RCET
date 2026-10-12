@@ -23,7 +23,7 @@ const topics: readonly Topic[] = [
     answer: `Applications for ${university.shortName} programmes are made through the UET Lahore admissions portal: ${ADMISSIONS_PORTAL_URL}\n\n1. Choose a programme on the Admissions page.\n2. Check this year's dates, eligibility and requirements on the portal.\n3. Apply through the portal.\n\nQuestions about your application:\n${contact}`,
   },
   {
-    keywords: ["program", "programme", "degree", "course", "bsc", "b.sc", "msc", "m.sc", "bba", "پروگرام", "ڈگری"],
+    keywords: ["program", "programme", "degree", "course", "bsc", "b.sc", "msc", "m.sc", "پروگرام", "ڈگری"],
     answer: `Programmes listed at ${university.shortName}:\n${programs.map((program) => `• ${program.name} (${levelLabels[program.level]})`).join("\n")}\n\nAvailability can change from year to year, so confirm on the UET admissions portal before applying.`,
   },
   {

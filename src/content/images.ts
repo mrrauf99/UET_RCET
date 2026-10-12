@@ -1942,34 +1942,6 @@ export const imageAssets = [
     "approvedAlt": null
   },
   {
-    "id": "image-127",
-    "sourceUrl": "https://rcet.uet.edu.pk/images/Mathematics.jpeg",
-    "purpose": "Program illustration: BS Mathematics",
-    "originalAlt": [
-      "BS Mathematics"
-    ],
-    "sourcePages": [
-      "https://rcet.uet.edu.pk/departments/natural-sciences-humanities (tab: Programs Offered)"
-    ],
-    "loadedWhenChecked": true,
-    "approvedLocalPath": null,
-    "approvedAlt": null
-  },
-  {
-    "id": "image-128",
-    "sourceUrl": "https://rcet.uet.edu.pk/images/BBA.jpeg",
-    "purpose": "Program illustration: BBA",
-    "originalAlt": [
-      "BBA"
-    ],
-    "sourcePages": [
-      "https://rcet.uet.edu.pk/departments/natural-sciences-humanities (tab: Programs Offered)"
-    ],
-    "loadedWhenChecked": true,
-    "approvedLocalPath": null,
-    "approvedAlt": null
-  },
-  {
     "id": "image-129",
     "sourceUrl": "https://staff.uet.edu.pk/profile/1216.jpg?time=Wed%20Apr%2016%202025%2004:50:07%20GMT+0500%20(Pakistan%20Standard%20Time)",
     "purpose": "Faculty portrait: Dr. Adnan Aslam",

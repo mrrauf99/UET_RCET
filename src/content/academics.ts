@@ -228,41 +228,5 @@ export const programs = [
       ]
     }
   },
-  {
-    "id": "bs-mathematics",
-    "name": "BS Mathematics",
-    "level": "undergraduate",
-    "departmentId": "natural-sciences-humanities",
-    "detailsHref": null,
-    "duration": null,
-    "admissionStatus": "unverified",
-    "source": {
-      "sourceUrl": "https://rcet.uet.edu.pk/",
-      "checkedAt": "2026-10-02",
-      "status": "needs-review",
-      "notes": [
-        "TODO: Verify this program is currently offered and establish current admission requirements.",
-        "TODO: Check this program's individual View Details destination."
-      ]
-    }
-  },
-  {
-    "id": "bba",
-    "name": "BBA",
-    "level": "undergraduate",
-    "departmentId": "natural-sciences-humanities",
-    "detailsHref": null,
-    "duration": null,
-    "admissionStatus": "unverified",
-    "source": {
-      "sourceUrl": "https://rcet.uet.edu.pk/",
-      "checkedAt": "2026-10-02",
-      "status": "needs-review",
-      "notes": [
-        "TODO: Verify this program is currently offered and establish current admission requirements.",
-        "TODO: Check this program's individual View Details destination."
-      ]
-    }
-  }
 ] satisfies readonly Program[];
 

@@ -1708,7 +1708,7 @@ export const extractedPages = [
     "id": "departments-natural-sciences-humanities",
     "title": "Department of Natural Sciences and Humanities | UET RCET - University of Engineering and Technology, Gujranwala Campus",
     "href": "https://rcet.uet.edu.pk/departments/natural-sciences-humanities",
-    "originalBody": "Introduction\nPrograms Offered\nFaculty\nLabs\nIntroduction\nThe Natural Science and Humanities Department at Rachna College of Engineering and Technology Gujranwala (RCET) parts a pivotal role in the holistic development of engineering students. While the primary focus of the university is to equip students with technical knowledge and skills, the department offers essential courses in natural sciences, and humanities to ensure a well-rounded education. In an era of rapid technological advancement, it is critical for engineers not only to be technically proficient but also to have a deep understanding of the natural world, human behavior, social exposure, and ethical principles. The integration of natural sciences and humanities into the engineering curriculum fosters critical thinking, problem-solving abilities, and a sense of social responsibility among students.\nPrograms Offered\nBS Mathematics\nBBA\nAllied department to all other four departments\n\n\nChairman's Message\n\nI welcome you on behalf of the Department of Natural Science and Humanities at Rachna College of Engineering and Technology (RCET), Gujranwala. In today’s rapidly evolving technological landscape, the integration of natural sciences and humanities with engineering education plays a crucial role in shaping well-rounded professionals. While our focus at RCET is to provide cutting-edge technical education, we also prioritize courses that deepen students’ understanding of the natural world, human behavior, social dynamics, and ethical values. Our department ensures that students develop strong analytical skills, a sense of social responsibility, and critical thinking abilities. These qualities are essential for engineers who must navigate complex real-world challenges and contribute meaningfully to society. Through a carefully crafted curriculum, our students are equipped to succeed in a world where technology and humanity go hand in hand. We take pride in preparing our students to be not just technically proficient engineers, but also thoughtful individuals who can contribute positively to the community.\n\nDr. Adnan Aslam",
+    "originalBody": "Introduction\nPrograms Offered\nFaculty\nLabs\nIntroduction\nThe Natural Science and Humanities Department at Rachna College of Engineering and Technology Gujranwala (RCET) parts a pivotal role in the holistic development of engineering students. While the primary focus of the university is to equip students with technical knowledge and skills, the department offers essential courses in natural sciences, and humanities to ensure a well-rounded education. In an era of rapid technological advancement, it is critical for engineers not only to be technically proficient but also to have a deep understanding of the natural world, human behavior, social exposure, and ethical principles. The integration of natural sciences and humanities into the engineering curriculum fosters critical thinking, problem-solving abilities, and a sense of social responsibility among students.\nPrograms Offered\nAllied department to all other four departments\n\n\nChairman's Message\n\nI welcome you on behalf of the Department of Natural Science and Humanities at Rachna College of Engineering and Technology (RCET), Gujranwala. In today’s rapidly evolving technological landscape, the integration of natural sciences and humanities with engineering education plays a crucial role in shaping well-rounded professionals. While our focus at RCET is to provide cutting-edge technical education, we also prioritize courses that deepen students’ understanding of the natural world, human behavior, social dynamics, and ethical values. Our department ensures that students develop strong analytical skills, a sense of social responsibility, and critical thinking abilities. These qualities are essential for engineers who must navigate complex real-world challenges and contribute meaningfully to society. Through a carefully crafted curriculum, our students are equipped to succeed in a world where technology and humanity go hand in hand. We take pride in preparing our students to be not just technically proficient engineers, but also thoughtful individuals who can contribute positively to the community.\n\nDr. Adnan Aslam",
     "imageIds": [
       "image-001",
       "image-034",
@@ -1876,16 +1876,6 @@ export const extractedPages = [
       {
         "label": "ABOUT US",
         "href": "https://rcet.uet.edu.pk/about-us",
-        "external": false
-      },
-      {
-        "label": "BS Mathematics",
-        "href": "",
-        "external": false
-      },
-      {
-        "label": "BBA",
-        "href": "",
         "external": false
       },
       {
@@ -7220,12 +7210,10 @@ export const departmentTabs = [
     "id": "natural-sciences-humanities-programs-offered",
     "title": "Programs Offered",
     "href": "https://rcet.uet.edu.pk/departments/natural-sciences-humanities",
-    "originalBody": "Introduction\nPrograms Offered\nFaculty\nLabs\nPrograms Offered\n\nBS Mathematics\n\nBBA",
+    "originalBody": "Introduction\nPrograms Offered\nFaculty\nLabs\nPrograms Offered",
     "imageIds": [
       "image-001",
       "image-034",
-      "image-127",
-      "image-128",
       "image-024",
       "image-025"
     ],

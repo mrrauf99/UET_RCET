@@ -96,7 +96,7 @@ export const contentIssues = [
     "affects": [
       "programs"
     ],
-    "description": "Verify all ten listed programs, current admissions, durations, eligibility, accreditation, and detail links.",
+    "description": "Verify all eight listed programs, current admissions, durations, eligibility, accreditation, and detail links.",
     "sourceUrls": [
       "https://rcet.uet.edu.pk/"
     ]
