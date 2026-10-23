@@ -18,6 +18,7 @@ let root: Root;
 let api: ReturnType<typeof useTextToSpeech>;
 let spoken: Utterance[];
 let options: SpeechOptions;
+let installedVoices: SpeechSynthesisVoice[];
 let wordHighlights: Map<string, { ranges: Range[] }>;
 
 class HighlightMock {
@@ -32,11 +33,14 @@ function last() { return spoken[spoken.length - 1]; }
 beforeEach(() => {
   vi.useFakeTimers();
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  document.cookie = "googtrans=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  document.cookie = "rcet_translation_language=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
   document.body.innerHTML = '<main><h1>Title.</h1><p id="first">First sentence. Second sentence.</p><p id="last">Last paragraph.</p></main><div id="root"></div>';
   Object.defineProperty(HTMLElement.prototype, "innerText", { configurable: true, get() { return this.textContent; } });
   vi.spyOn(HTMLElement.prototype, "getClientRects").mockReturnValue([{ width: 100, height: 20 }] as unknown as DOMRectList);
   HTMLElement.prototype.scrollIntoView = vi.fn();
   spoken = [];
+  installedVoices = [{ name: "Microsoft David", lang: "en-US", default: false }, { name: "Microsoft Zira", lang: "en-US", default: true }] as SpeechSynthesisVoice[];
   wordHighlights = new Map();
   options = { ...DEFAULT_SPEECH_OPTIONS, autoPlay: false };
   vi.stubGlobal("SpeechSynthesisUtterance", Utterance);
@@ -44,7 +48,7 @@ beforeEach(() => {
   vi.stubGlobal("CSS", { highlights: wordHighlights });
   vi.stubGlobal("speechSynthesis", {
     cancel: vi.fn(), speak: (utterance: Utterance) => spoken.push(utterance),
-    getVoices: () => [{ name: "Microsoft David", lang: "en-US", default: false }, { name: "Microsoft Zira", lang: "en-US", default: true }],
+    getVoices: () => installedVoices,
     addEventListener: vi.fn(), removeEventListener: vi.fn(),
   });
   root = createRoot(document.getElementById("root")!);
@@ -158,6 +162,37 @@ describe("Text to Speech transport", () => {
     run(api.previousBlock); expect(last().text).toBe("First sentence.");
   });
 
+  it("uses the selected English region and the matching browser voice", () => {
+    document.cookie = "rcet_translation_language=en-GB; path=/";
+    installedVoices = [
+      { name: "Microsoft English US", lang: "en-US", default: true },
+      { name: "Microsoft English UK", lang: "en-GB", default: false },
+    ] as SpeechSynthesisVoice[];
+    options = { ...options, autoPlay: true };
+    act(() => root.render(createElement(Harness)));
+
+    run(() => api.readFrom(document.getElementById("first")!));
+
+    expect(last().voice?.name).toBe("Microsoft English UK");
+    expect(last().lang).toBe("en-GB");
+  });
+
+  it("blocks Text to Speech on translated pages without requesting server audio", async () => {
+    document.body.innerHTML = '<main><p id="translated">Translated page content.</p></main><div id="root"></div>';
+    document.cookie = "googtrans=/en/ar; path=/";
+    document.cookie = "rcet_translation_language=ar; path=/";
+    options = { ...options, autoPlay: true };
+    act(() => root.render(createElement(Harness)));
+
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    run(() => api.readFrom(document.getElementById("translated")!));
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(spoken).toHaveLength(0);
+    expect(api.playing).toBe(false);
+    expect(api.error).toContain("available only when the page is in English");
+  });
   it("seeks forwards and backwards within a long paragraph", () => {
     document.getElementById("first")!.textContent = Array.from({ length: 80 }, (_, index) => `word${index}`).join(" ");
     run(() => api.readFrom(document.getElementById("first")!));

@@ -6,7 +6,59 @@ import { observeImageDescriptions, pausePageMedia } from "@/lib/a11y/page-effect
 import { resolvedAttribute, useA11yState } from "@/lib/a11y/store";
 
 const KEYBOARD_STEP_EM = 1.5;
-const TEXT_BLOCKS = "p, li, h1, h2, h3, h4, a, button, label, td, th, dt, dd, blockquote, figcaption";
+const FOCUS_TEXT_SKIP = "script, style, noscript, template, textarea, input, select, option, [contenteditable='true'], [aria-hidden='true'], .a11y-toolbar, [data-a11y-trigger], [data-screen-mask], [data-reading-ruler]";
+
+function focusTextChunk(text: string) {
+  const chunk = document.createElement("span");
+  chunk.dataset.a11yFocusTextChunk = "";
+  const parts = text.match(/[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)*|[^\p{L}\p{N}]+/gu) ?? [text];
+
+  for (const part of parts) {
+    if (!/[\p{L}\p{N}]/u.test(part)) {
+      chunk.append(document.createTextNode(part));
+      continue;
+    }
+
+    const word = document.createElement("span");
+    word.className = "a11y-focus-text-word";
+    word.setAttribute("aria-label", part);
+    const characters = Array.from(part);
+    const emphasizedLength = /^(?=.*\p{Lu})[\p{Lu}\p{N}]+$/u.test(part) || characters.length <= 3
+      ? 1
+      : Math.ceil(characters.length / 2);
+    const emphasized = document.createElement("span");
+    emphasized.className = "a11y-focus-text-bold";
+    emphasized.textContent = characters.slice(0, emphasizedLength).join("");
+    const remainder = document.createElement("span");
+    remainder.className = "a11y-focus-text-normal";
+    remainder.textContent = characters.slice(emphasizedLength).join("");
+    word.append(emphasized, remainder);
+    chunk.append(word);
+  }
+
+  return chunk;
+}
+
+function applyFocusText(root: Node) {
+  if (root instanceof Text) {
+    if (root.data.trim() && !root.parentElement?.closest(`${FOCUS_TEXT_SKIP}, [data-a11y-focus-text-chunk]`)) {
+      root.replaceWith(focusTextChunk(root.data));
+    }
+    return;
+  }
+  if (!(root instanceof Element) || root.closest(FOCUS_TEXT_SKIP)) return;
+
+  const textNodes: Text[] = [];
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let node: Node | null;
+  while ((node = walker.nextNode())) {
+    if (node.textContent?.trim() && !node.parentElement?.closest(`${FOCUS_TEXT_SKIP}, [data-a11y-focus-text-chunk]`)) {
+      textNodes.push(node as Text);
+    }
+  }
+
+  for (const textNode of new Set(textNodes)) textNode.replaceWith(focusTextChunk(textNode.data));
+}
 
 function useReadingLine(onMove: (y: number) => void) {
   const move = useEffectEvent(onMove);
@@ -144,39 +196,16 @@ function ScreenMask({ horizontal, vertical, size, color, edge, opacity }: { hori
 
 function FocusText() {
   useEffect(() => {
-    let active: HTMLElement | null = null;
-    const clear = () => {
-      active?.removeAttribute("data-focus-text-active");
-      active = null;
-      if (typeof CSS !== "undefined" && "highlights" in CSS) CSS.highlights.delete("rcet-focus-text");
-    };
-    const focus = (event: Event) => {
-      const source = event.target;
-      if (!(source instanceof Element) || source.closest(".a11y-toolbar")) return;
-      const target = source.closest<HTMLElement>(TEXT_BLOCKS);
-      if (!target || target === active) return;
-      clear();
-      active = target;
-      if (typeof CSS === "undefined" || !("highlights" in CSS) || typeof Highlight === "undefined") {
-        active.setAttribute("data-focus-text-active", "");
-        return;
-      }
-      if (!document.getElementById("rcet-focus-text-style")) {
-        const style = document.createElement("style");
-        style.id = "rcet-focus-text-style";
-        style.textContent = "::highlight(rcet-focus-text) { background-color: #06c; color: #fff; }";
-        document.head.append(style);
-      }
-      const range = document.createRange();
-      range.selectNodeContents(active);
-      CSS.highlights.set("rcet-focus-text", new Highlight(range));
-    };
-    document.addEventListener("pointerover", focus);
-    document.addEventListener("focusin", focus);
+    applyFocusText(document.body);
+    const observer = new MutationObserver((records) => {
+      for (const record of records) for (const node of record.addedNodes) applyFocusText(node);
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
     return () => {
-      document.removeEventListener("pointerover", focus);
-      document.removeEventListener("focusin", focus);
-      clear();
+      observer.disconnect();
+      document.querySelectorAll<HTMLElement>("[data-a11y-focus-text-chunk]").forEach((chunk) => {
+        chunk.replaceWith(document.createTextNode(chunk.textContent ?? ""));
+      });
     };
   }, []);
   return null;

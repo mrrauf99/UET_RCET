@@ -168,6 +168,7 @@ export async function generateAudio(input: AudioRequest, signal: AbortSignal, re
   const timing = { receivedAt: new Date(receivedAt).toISOString(), cache: "MISS", worker: "NONE", cacheLookupMs: 0, workerAcquireMs: 0, preparationWaitMs: 0, modelInitMs: 0, inferenceMs: 0, encodingMs: 0 };
   let outcome = "ERROR";
   try {
+    if (!/^en(?:-|$)/i.test(input.language)) throw new Error("unsupported_language");
     if (signal.aborted) throw new Error("aborted");
     const lookup = performance.now();
     const key = createHash("sha256").update(JSON.stringify([input.text, input.language, input.voice, input.rate])).digest("hex");

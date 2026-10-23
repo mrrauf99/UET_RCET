@@ -7,8 +7,8 @@ function request(body: unknown, headers: HeadersInit = { "Content-Type": "applic
 }
 
 describe("Audio download endpoint", () => {
-  it("returns a downloadable MP3 with the requested voice, speed and language", async () => {
-    const input = { text: "Read this.", voice: "male", rate: 1.4, language: "ur" };
+  it("returns an English MP3 with the requested voice and speed", async () => {
+    const input = { text: "Read this.", voice: "male", rate: 1.4, language: "en-GB" };
     const response = await POST(request(input));
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Type")).toBe("audio/mpeg");
@@ -27,9 +27,17 @@ describe("Audio download endpoint", () => {
     expect((await POST(request({ text: "Read" }, { "Content-Type": "application/json", Origin: "https://another-site.example" }))).status).toBe(403);
   });
 
-  it("reports unsupported languages and releases capacity after a failed worker", async () => {
+  it("rejects non-English requests before synthesis", async () => {
+    const callsBefore = synthesize.mock.calls.length;
+    const response = await POST(request({ text: "Read", language: "ur" }));
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({ error: "unsupported_language" });
+    expect(synthesize.mock.calls).toHaveLength(callsBefore);
+  });
+
+  it("releases capacity after an unsupported-language worker failure", async () => {
     synthesize.mockRejectedValueOnce(new Error("unsupported_language"));
-    expect((await POST(request({ text: "Read", language: "xx" }))).status).toBe(422);
+    expect((await POST(request({ text: "Read" }))).status).toBe(422);
     expect((await POST(request({ text: "Read" }))).status).toBe(200);
   });
 

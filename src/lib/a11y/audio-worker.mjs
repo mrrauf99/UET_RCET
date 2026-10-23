@@ -1,9 +1,7 @@
 /* oxlint-disable require-post-message-target-origin -- Node MessagePort has no targetOrigin parameter. */
 /* oxlint-disable no-await-in-loop -- Serialize CPU inference to preserve order and bound memory. */
 import { parentPort } from "node:worker_threads";
-import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import text2wav from "text2wav";
 import { Mp3Encoder } from "@breezystack/lamejs";
 import { speechChunks } from "./audio-text.mjs";
 
@@ -66,40 +64,10 @@ async function englishAudio(input, timings) {
   return audio;
 }
 
-const directory = join(process.cwd(), "node_modules/text2wav/espeak-ng-data/lang");
-function languages(path) {
-  return readdirSync(path, { withFileTypes: true }).flatMap((entry) => {
-    const file = join(path, entry.name);
-    return entry.isDirectory() ? languages(file) : [...readFileSync(file, "utf8").matchAll(/^language\s+(\S+)/gm)].map((match) => match[1].toLowerCase());
-  });
-}
-const supported = new Set(languages(directory));
-const aliases = { "zh-cn": "cmn", "zh-tw": "cmn", zh: "cmn", "zh-yue": "yue", fil: "tl", iw: "he", jw: "jv" };
 async function synthesizeAudio(input, timings) {
-  const requested = input.language.toLowerCase();
-  const language = aliases[requested] || requested;
-  const voice = supported.has(language) ? language : language.split("-")[0];
-  if (!supported.has(voice)) throw new Error("unsupported_language");
-  if (voice === "en" || voice.startsWith("en-")) return englishAudio(input, timings);
-  // This Emscripten build predates Node's fetch; load its local WASM through the filesystem.
-  const nativeFetch = globalThis.fetch;
-  globalThis.fetch = undefined;
-  let wav;
-  const inference = performance.now();
-  try {
-    // The CLI bridge requires strings; numeric options silently revert to its defaults.
-    wav = await text2wav(` ${input.text}`, { voice: `${voice}+${input.voice === "male" ? "m3" : "f3"}`, speed: String(Math.round(175 * input.rate)), encoding: "1" });
-  } finally { globalThis.fetch = nativeFetch; }
-  timings.inferenceMs = performance.now() - inference;
-  const view = new DataView(wav.buffer, wav.byteOffset, wav.byteLength);
-  if (view.getUint16(20, true) !== 1 || view.getUint16(22, true) !== 1 || view.getUint16(34, true) !== 16) throw new Error("Invalid speech audio");
-  const samples = new Int16Array(wav.buffer.slice(wav.byteOffset + 44, wav.byteOffset + wav.byteLength));
-  const encoding = performance.now();
-  const audio = encodeMp3([samples], view.getUint32(24, true));
-  timings.encodingMs = performance.now() - encoding;
-  return audio;
+  if (!/^en(?:-|$)/i.test(input.language)) throw new Error("unsupported_language");
+  return englishAudio(input, timings);
 }
-
 let prepared = false;
 parentPort.on("message", async (input) => {
   const timings = { modelInitMs: 0, inferenceMs: 0, encodingMs: 0 };

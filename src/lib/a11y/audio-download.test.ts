@@ -33,6 +33,7 @@ beforeEach(() => {
   document.body.innerHTML = '<main><p id="passage">Read this selected passage.</p></main><section class="a11y-toolbar"><span id="tool">Toolbar text</span></section><div id="root"></div>';
   document.documentElement.lang = "en";
   document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+  document.cookie = "rcet_translation_language=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
   window.getSelection()!.removeAllRanges();
   vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>((resolve) => { resolveResponse = resolve; })));
   Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn(() => "blob:audio") });
@@ -58,6 +59,14 @@ describe("Download Audio", () => {
     expect(api.busy).toBe(false);
     act(() => vi.advanceTimersByTime(30_000));
     expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:audio");
+  });
+
+  it("preserves the selected English region in the server audio request", () => {
+    document.cookie = "rcet_translation_language=en-GB; path=/";
+    select();
+    act(api.download);
+    const [, request] = vi.mocked(fetch).mock.calls[0];
+    expect(JSON.parse(request!.body as string)).toEqual({ text: "Read this selected passage.", voice: "female", rate: 1, language: "en-GB" });
   });
 
   it("waits after an empty click, then automatically exports a pointer or keyboard selection once", async () => {

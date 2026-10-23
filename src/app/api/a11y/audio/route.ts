@@ -26,6 +26,7 @@ export async function POST(request: Request) {
     if (!parsed.success) return json(400, "invalid_request");
     input = parsed.data;
   } catch { return json(400, "invalid_request"); }
+  if (!/^en(?:-|$)/i.test(input.language)) return json(422, "unsupported_language");
   if (activeDownloads >= 2) return json(429, "busy", { "Retry-After": "5" });
   activeDownloads++;
   try {

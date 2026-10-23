@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { isEnglishPage, selectedTranslation } from "./translate";
 
 const BLOCK_SELECTOR = "h1, h2, h3, h4, h5, h6, p, li, blockquote, dt, dd, figcaption, a, button, label, summary, td, th, span, div";
 const HOVER_SELECTOR = "h1, h2, h3, h4, h5, h6, p, li, blockquote, dt, dd, figcaption, a, button, label, summary, td, th";
@@ -183,12 +184,20 @@ export function useTextToSpeech(options: SpeechOptions = DEFAULT_SPEECH_OPTIONS)
   }, []);
 
   const configure = (utterance: SpeechSynthesisUtterance) => {
-    const language = document.documentElement.lang || "en-GB";
-    const available = window.speechSynthesis.getVoices().filter((voice) => voice.lang.split("-")[0] === language.split("-")[0]);
+    const language = selectedTranslation() || document.documentElement.lang || "en-GB";
+    const normalizedLanguage = language.toLowerCase();
+    const installedVoices = window.speechSynthesis.getVoices();
+    const exact = installedVoices.filter((voice) => voice.lang.toLowerCase() === normalizedLanguage);
+    const available = exact.length
+      ? exact
+      : installedVoices.filter((voice) => voice.lang.toLowerCase().split("-")[0] === normalizedLanguage.split("-")[0]);
     const pattern = settings.current.voice === "male" ? /\b(male|david|mark|george|daniel|ryan|guy)\b/i : /\b(female|samantha|susan|zira|hazel|sonia|aria|jenny)\b/i;
-    utterance.voice = available.find((voice) => pattern.test(voice.name)) ?? available.find((voice) => voice.default) ?? available[0] ?? null;
-    utterance.lang = utterance.voice?.lang ?? language;
+    const voice = available.find((candidate) => pattern.test(candidate.name)) ?? available.find((candidate) => candidate.default) ?? available[0] ?? null;
+    utterance.voice = voice;
+    // Keep the utterance locale aligned with the voice actually selected by the browser.
+    utterance.lang = voice?.lang || language;
     utterance.rate = settings.current.rate;
+    return voice;
   };
   const configureRef = useRef(configure);
   useEffect(() => { configureRef.current = configure; });
@@ -219,6 +228,12 @@ export function useTextToSpeech(options: SpeechOptions = DEFAULT_SPEECH_OPTIONS)
 
   // Reads only refs and stable setters, so one instance can recurse from utterance callbacks.
   const speak = useCallback(function speakNext() {
+    if (!isEnglishPage()) {
+      setStatus("idle");
+      setError("Text to Speech is available only when the page is in English.");
+      mark(undefined);
+      return;
+    }
     const element = blocks.current[position.current.block];
     if (!element) {
       position.current = { block: 0, sentence: 0 };
@@ -238,13 +253,14 @@ export function useTextToSpeech(options: SpeechOptions = DEFAULT_SPEECH_OPTIONS)
     highlightWord(element, parts, position.current.sentence, wordOffset.current, 0);
     const current = generation.current;
     const offset = wordOffset.current;
+    const sentence = position.current.sentence;
     const words = text.split(/\s+/);
     const spoken = words.slice(offset).join(" ");
     const utterance = new SpeechSynthesisUtterance(spoken);
     configureRef.current(utterance);
     utterance.onboundary = (event) => {
       if (current !== generation.current) return;
-      highlightWord(element, parts, position.current.sentence, offset, event.charIndex);
+      highlightWord(element, parts, sentence, offset, event.charIndex);
       wordOffset.current = offset + spoken.slice(0, event.charIndex).split(/\s+/).filter(Boolean).length;
     };
     utterance.onend = () => {
@@ -277,6 +293,10 @@ export function useTextToSpeech(options: SpeechOptions = DEFAULT_SPEECH_OPTIONS)
   /** Speaks a short label (e.g. a hovered control). Never interrupts a running reading. */
   const say = (text: string) => {
     if (statusRef.current === "playing") return;
+    if (!isEnglishPage()) {
+      setError("Text to Speech is available only when the page is in English.");
+      return;
+    }
     generation.current += 1;
     window.speechSynthesis.cancel();
     const current = generation.current;
@@ -291,6 +311,10 @@ export function useTextToSpeech(options: SpeechOptions = DEFAULT_SPEECH_OPTIONS)
   };
 
   const readHovered = (target: Element) => {
+    if (!isEnglishPage()) {
+      setError("Text to Speech is available only when the page is in English.");
+      return;
+    }
     const element = readableTarget(target);
     if (!element) return;
     if (hovered.current === element && statusRef.current === "playing") return;
@@ -306,6 +330,10 @@ export function useTextToSpeech(options: SpeechOptions = DEFAULT_SPEECH_OPTIONS)
   };
 
   const restart = (scroll = true) => {
+    if (!isEnglishPage()) {
+      setError("Text to Speech is available only when the page is in English.");
+      return;
+    }
     scrollOnRead.current = scroll;
     generation.current += 1;
     const current = generation.current;
@@ -326,6 +354,10 @@ export function useTextToSpeech(options: SpeechOptions = DEFAULT_SPEECH_OPTIONS)
   };
 
   const move = (blockDelta: number, sentenceDelta: number) => {
+    if (!isEnglishPage()) {
+      setError("Text to Speech is available only when the page is in English.");
+      return;
+    }
     hovered.current = null;
     if (blocks.current.length === 0) blocks.current = readableBlocks();
     const last = Math.max(blocks.current.length - 1, 0);
@@ -360,6 +392,10 @@ export function useTextToSpeech(options: SpeechOptions = DEFAULT_SPEECH_OPTIONS)
 
   // Web Speech has no audio seek API; approximate ten seconds using word position and reading rate.
   const seek = (seconds: number) => {
+    if (!isEnglishPage()) {
+      setError("Text to Speech is available only when the page is in English.");
+      return;
+    }
     if (!blocks.current.length) blocks.current = readableBlocks();
     if (!blocks.current.length) return;
     const segments = blocks.current.flatMap((element, block) => blockSentences(element).map((text, sentence) => ({ block, sentence, words: text.split(/\s+/).length })));

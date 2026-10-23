@@ -9,7 +9,7 @@ import type { FocusSoundMode } from "@/lib/a11y/focus-sound";
 import type { SpeechOptions } from "@/lib/a11y/speech";
 import { COLOR_PRESETS, DEFAULT_PREFS, LETTER_SPACINGS, LINE_HEIGHTS, RULER_COLORS, RULER_SWATCHES, type A11yPrefs } from "@/lib/a11y/prefs";
 import { resolvedAttribute, updatePrefs } from "@/lib/a11y/store";
-import { currentTranslation, showOriginal, translatePage } from "@/lib/a11y/translate";
+import { currentTranslation, selectedTranslation, showOriginal, translatePage } from "@/lib/a11y/translate";
 import { VOICE_COMMANDS } from "@/lib/a11y/voice-control";
 import { collectOutline, highlightOutline, STRUCTURE_VIEWS, type OutlineItem, type StructureView } from "@/lib/a11y/page-structure";
 import { Choice, ResetButton, Stepper, Switch } from "./controls";
@@ -216,10 +216,10 @@ export function FontPanel({ prefs, announce }: PrefsPanelProps) {
   );
 }
 
-export function TranslationPanel({ announce, hoverLanguage, onHoverLanguageChange }: { announce: Announce; hoverLanguage: string | null; onHoverLanguageChange: (language: string | null) => void }) {
+export function TranslationPanel({ announce, onEnglishAvailability }: { announce: Announce; onEnglishAvailability: (available: boolean) => void }) {
   const [query, setQuery] = useState("");
   // Panels render only in the browser (the toolbar is closed during server rendering).
-  const [active, setActive] = useState(currentTranslation);
+  const [active, setActive] = useState(() => selectedTranslation() ?? "en-GB");
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
@@ -234,7 +234,7 @@ export function TranslationPanel({ announce, hoverLanguage, onHoverLanguageChang
     try {
       await translatePage(language.code);
       setActive(language.code);
-      onHoverLanguageChange(language.code.startsWith("en") ? null : language.code);
+      onEnglishAvailability(/^en(?:-|$)/i.test(language.code));
       announce(`Page translated to ${language.name}`);
     } catch {
       setError("Translation could not start. Check your connection and try again.");
@@ -245,19 +245,15 @@ export function TranslationPanel({ announce, hoverLanguage, onHoverLanguageChang
 
   return (
     <div className="a11y-translation-controls">
-      <Switch
-        label="Translate words on hover"
-        description={active && !active.startsWith("en") ? "Hover over a translated word to see its English translation." : "Choose a translated page language first to enable word translations."}
-        checked={hoverLanguage !== null}
-        disabled={active === null || active.startsWith("en")}
-        onChange={(enabled) => onHoverLanguageChange(enabled && active && !active.startsWith("en") ? active : null)}
-      />
       <button type="button" className="a11y-panel-reset" aria-label="Reset translation to original English" aria-disabled={pending !== null || undefined} onClick={() => {
         if (pending) return;
-        if (active) showOriginal();
+        if (currentTranslation()) showOriginal();
         else {
           setQuery("");
           setError("");
+          void translatePage("en-GB");
+          setActive("en-GB");
+          onEnglishAvailability(true);
           announce("Original English selected");
         }
       }}>Reset to default</button>
@@ -294,7 +290,7 @@ export function TranslationPanel({ announce, hoverLanguage, onHoverLanguageChang
             >
               <span className="flex min-w-0 flex-col gap-1">
                 <span>{language.name}</span>
-                <span lang={language.code} dir="auto" className="text-[14px]">{language.native}</span>
+                <span lang={language.code} dir="auto" className="text-[14px] italic">{language.native}</span>
               </span>
               {pending === language.code ? (
                 <span className="text-[14px]">Translating…</span>
@@ -309,6 +305,7 @@ export function TranslationPanel({ announce, hoverLanguage, onHoverLanguageChang
         searchRef.current?.focus({ preventScroll: true });
       }}><Icon name="send" className="size-4" />Back to top</button>
       <p className="text-[14px] text-(--tb-muted)">Translated with Google Translate. Machine translation can contain errors.</p>
+      <p className="text-[14px] text-(--tb-muted)">Text to Speech and audio downloads are available only for English.</p>
     </div>
   );
 }

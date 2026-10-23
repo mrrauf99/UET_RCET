@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
 import type { SpeechOptions } from "./speech";
-import { currentTranslation } from "./translate";
+import { isEnglishPage, selectedTranslation } from "./translate";
 
 export const AUDIO_TEXT_LIMIT = 12_000;
 export const AUDIO_SELECT_MESSAGE = "Please select some text.";
@@ -55,6 +55,10 @@ export function useAudioDownload(options: SpeechOptions, onStart: () => void) {
     if (request.current) return;
     awaitingSelection.current = false;
     setWaiting(false);
+    if (!isEnglishPage()) {
+      notify("Audio download is available only when the page is in English.");
+      return;
+    }
     if (text.length > AUDIO_TEXT_LIMIT) {
       notify("Please select a shorter passage (up to 12,000 characters).");
       return;
@@ -69,12 +73,12 @@ export function useAudioDownload(options: SpeechOptions, onStart: () => void) {
       const response = await fetch("/api/a11y/audio", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, voice: settings.current.voice, rate: settings.current.rate, language: currentTranslation() || document.documentElement.lang || "en" }),
+        body: JSON.stringify({ text, voice: settings.current.voice, rate: settings.current.rate, language: selectedTranslation() || document.documentElement.lang || "en" }),
         signal: controller.signal,
       });
       if (!response.ok) {
         const error = await response.json().catch(() => null);
-        throw new Error(error?.error === "unsupported_language" ? "Audio is unavailable for this language. Try another language." : response.status === 429 ? "Audio downloads are busy. Please try again in a few seconds." : "Your audio file could not be created. Please try again.");
+        throw new Error(error?.error === "unsupported_language" ? "Audio download is available only when the page is in English." : response.status === 429 ? "Audio downloads are busy. Please try again in a few seconds." : "Your audio file could not be created. Please try again.");
       }
       const blob = await response.blob();
       if (controller.signal.aborted) return;
@@ -102,6 +106,12 @@ export function useAudioDownload(options: SpeechOptions, onStart: () => void) {
   }, [notify]);
 
   const download = () => {
+    if (!isEnglishPage()) {
+      awaitingSelection.current = false;
+      setWaiting(false);
+      notify("Audio download is available only when the page is in English.");
+      return;
+    }
     const text = captured.current ?? selectedAudioText();
     captured.current = null;
     if (request.current) return;

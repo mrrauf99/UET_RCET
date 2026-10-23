@@ -24,10 +24,11 @@ describe("Audio synthesis worker", () => {
     expect(fast).not.toEqual(normal);
   }, 90_000);
 
-  it("supports Urdu and reports unsupported languages without taking down the server", async () => {
-    const urdu = await generateAudio({ ...input, text: "راچنا کالج میں خوش آمدید", language: "ur" }, new AbortController().signal);
-    expect(urdu.length).toBeGreaterThan(1000);
-    await expect(generateAudio({ ...input, language: "xx" }, new AbortController().signal)).rejects.toThrow("unsupported_language");
+  it("rejects non-English languages before acquiring a worker", async () => {
+    for (const language of ["ur", "ar", "fr", "xx"]) {
+      // oxlint-disable-next-line no-await-in-loop -- Assert each language is rejected before worker use.
+      await expect(generateAudio({ ...input, language }, new AbortController().signal)).rejects.toThrow("unsupported_language");
+    }
   }, 15_000);
 
   it("runs two English workers concurrently and reuses them afterward", async () => {

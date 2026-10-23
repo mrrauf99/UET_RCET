@@ -1,4 +1,5 @@
 const COOKIE = "googtrans";
+const SELECTED_LANGUAGE_COOKIE = "rcet_translation_language";
 const CONTAINER_ID = "google-translate-element";
 const SCRIPT_SRC = "https://translate.google.com/translate_a/element.js?cb=rcetTranslateInit";
 
@@ -17,6 +18,17 @@ export function currentTranslation(): string | null {
   return match?.[1] && match[1] !== "en" ? decodeURIComponent(match[1]) : null;
 }
 
+export function selectedTranslation(): string | null {
+  const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${SELECTED_LANGUAGE_COOKIE}=([^;]+)`));
+  return match?.[1] ? decodeURIComponent(match[1]) : currentTranslation();
+}
+
+export function isEnglishPage(): boolean {
+  if (typeof document === "undefined") return true;
+  const language = selectedTranslation() || document.documentElement.lang || "en";
+  return /^en(?:-|$)/i.test(language);
+}
+
 function writeCookie(value: string | null) {
   if (value) {
     document.cookie = `${COOKIE}=${value}; path=/; SameSite=Lax`;
@@ -26,6 +38,14 @@ function writeCookie(value: string | null) {
   for (const domain of ["", `; domain=${location.hostname}`, `; domain=.${location.hostname}`]) {
     document.cookie = `${COOKIE}=; path=/${domain}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
   }
+}
+
+function writeSelectedLanguage(code: string | null) {
+  if (code) {
+    document.cookie = `${SELECTED_LANGUAGE_COOKIE}=${encodeURIComponent(code)}; path=/; SameSite=Lax`;
+    return;
+  }
+  document.cookie = `${SELECTED_LANGUAGE_COOKIE}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
 }
 
 /**
@@ -87,9 +107,10 @@ async function languageSelect(): Promise<HTMLSelectElement> {
   throw new Error("Google Translate did not start");
 }
 
-export async function translatePage(code: string) {
+export async function translatePage(code: string, rememberSelection = true) {
   const language = code === "fil" ? "tl" : code.startsWith("en-") ? "en" : code;
   if (language === "en") {
+    if (rememberSelection) writeSelectedLanguage(code);
     if (currentTranslation()) showOriginal();
     return;
   }
@@ -103,8 +124,10 @@ export async function translatePage(code: string) {
     }
     select.value = language;
     select.dispatchEvent(new Event("change"));
+    if (rememberSelection) writeSelectedLanguage(code);
   } catch (error) {
     writeCookie(null);
+    writeSelectedLanguage(null);
     throw error;
   }
 }
@@ -112,10 +135,11 @@ export async function translatePage(code: string) {
 /** Restores the original page; Google offers no reliable in-place undo, so this reloads. */
 export function showOriginal() {
   writeCookie(null);
+  writeSelectedLanguage(null);
   location.reload();
 }
 
 export function resumeTranslation() {
   const code = currentTranslation();
-  if (code) void translatePage(code).catch(() => {});
+  if (code) void translatePage(code, false).catch(() => {});
 }
