@@ -59,7 +59,7 @@ describe("Audio worker reuse and cache", () => {
   });
 
   it("separates cache entries by text, language, voice and speed", async () => {
-    for (const variant of [input, { ...input, text: "Different." }, { ...input, language: "ur" }, { ...input, voice: "male" as const }, { ...input, rate: 1.5 }]) {
+    for (const variant of [input, { ...input, text: "Different." }, { ...input, language: "en-GB" }, { ...input, voice: "male" as const }, { ...input, rate: 1.5 }]) {
       const result = generateAudio(variant, signal());
       complete(instances[0]);
       // oxlint-disable-next-line no-await-in-loop -- complete this request before issuing the next.
@@ -97,7 +97,7 @@ describe("Audio worker reuse and cache", () => {
   });
 
   it("releases an idle worker that has not prepared the English model", async () => {
-    const first = generateAudio({ ...input, language: "ur" }, signal());
+    const first = generateAudio(input, signal());
     instances[0].emit("message", { audio: mp3(), prepared: false });
     await first;
     await vi.advanceTimersByTimeAsync(120_000);

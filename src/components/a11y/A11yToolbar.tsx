@@ -23,7 +23,7 @@ import {
   SpeechPanel,
   TranslationPanel,
   VoiceControlPanel,
-} from "./toolbar-panels";
+} from "./toolbar-panels/index";
 
 type PanelId =
   | "audio"
