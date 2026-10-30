@@ -1,24 +1,19 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import { useEffect } from "react";
-import { useA11yState } from "@/lib/a11y/store";
-import { resumeTranslation } from "@/lib/a11y/translate";
-import { scheduleIdle } from "@/lib/schedule-idle";
+import { AccessibilityToolbar } from "accessibility-toolbar/react";
+import type { ToolbarOptions } from "accessibility-toolbar";
 
-const loadToolbar = () => import("./A11yToolbar").then((mod) => mod.A11yToolbar);
-
-// The toolbar (panels, speech, voice, translation) stays out of the page's startup JavaScript.
-const A11yToolbar = dynamic(loadToolbar, { ssr: false });
+const options: ToolbarOptions = {
+  storageKey: "rcet:a11y:v1",
+  sourceLanguage: "en",
+  trigger: false,
+  pageEffects: "host",
+  theme: { displayFontFamily: "var(--font-jost)" },
+  focusAudio: { focus: "/audio/focus.wav", deeper: "/audio/deeper.wav" },
+  branding: { name: "RCET", label: "Accessibility" },
+  audio: { endpoint: "/api/a11y/audio", filename: "RCET-Audio.mp3" },
+};
 
 export function ToolbarHost() {
-  const { toolbarOpen } = useA11yState();
-
-  useEffect(() => {
-    resumeTranslation();
-    // Warm the chunk once the page is idle so the first open doesn't wait on the network.
-    return scheduleIdle(() => void loadToolbar());
-  }, []);
-
-  return toolbarOpen ? <A11yToolbar /> : null;
+  return <AccessibilityToolbar options={options} />;
 }

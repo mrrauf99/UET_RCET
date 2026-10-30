@@ -1,13 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import { Atkinson_Hyperlegible_Next, Jost, Lato, Lexend } from "next/font/google";
 import { A11yTrigger } from "@/components/a11y/A11yTrigger";
-import { ReadingAids } from "@/components/a11y/ReadingAids";
 import { ToolbarHost } from "@/components/a11y/ToolbarHost";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SkipLink } from "@/components/layout/SkipLink";
 import { ChatHost } from "@/components/rachna-gpt/ChatHost";
-import { PREFERENCES_INIT_SCRIPT } from "@/lib/a11y/prefs";
+import { getPreferencesInitScript } from "accessibility-toolbar/init";
 import { getFooter, getNavigation, getUniversity } from "@/lib/content";
 import { IMAGE_FADE_SCRIPT } from "@/lib/image-fade";
 import { SITE_URL } from "@/lib/site";
@@ -97,7 +96,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: PREFERENCES_INIT_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: getPreferencesInitScript("rcet:a11y:v1") }} />
         <script dangerouslySetInnerHTML={{ __html: IMAGE_FADE_SCRIPT }} />
       </head>
       <body className="flex min-h-dvh flex-col antialiased">
@@ -116,7 +115,6 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <A11yTrigger placement="floating" />
         <ChatHost />
         <ToolbarHost />
-        <ReadingAids />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}

@@ -79,6 +79,7 @@
     ]
   },
   "ignorePatterns": [
+    ".cache/**",
     ".next/**",
     "out/**",
     "build/**",

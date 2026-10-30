@@ -12,7 +12,7 @@ This is a private repository for internal development of the RCET website.
 
 ## Run it
 
-Requires Node.js 20.9 or newer (tested on Node 24).
+Requires Node.js 20.19 or newer (tested on Node 24).
 
 ```bash
 npm install
@@ -31,7 +31,7 @@ Set `NEXT_PUBLIC_SITE_URL` to change the canonical domain used in metadata, `sit
 
 Set `RACHNA_GPT_IP_HEADER` to the header your trusted proxy uses for the client IP (default `x-real-ip`). Rachna GPT's rate limit is in-memory, so use a shared store in production.
 
-Download Audio generates MP3 speech on the Node server. English uses local Kokoro voices with sentence pauses; other supported languages use eSpeak. `npm run dev` and `npm run build` first run `npm run setup:audio`, which downloads the pinned 92 MB model into `.cache/a11y-audio/` once. Subsequent runs use those files without a network connection. Next.js traces the model and runtime assets for deployment. Allow up to three minutes for long selections; voice and speed follow the accessibility toolbar settings.
+Download Audio generates MP3 speech on the Node server. English uses local Kokoro voices with sentence pauses; non-English downloads are unavailable. `npm run dev` and `npm run build` first run `npm run setup:audio`, which downloads the pinned 92 MB model into `.cache/a11y-audio/` once. Subsequent runs use those files without a network connection. Next.js traces the model and runtime assets for deployment. Allow up to three minutes for long selections; voice and speed follow the accessibility toolbar settings.
 
 Set `ONNXRUNTIME_NODE_INSTALL=skip` in the environment before installing dependencies on Linux CI. In Vercel, add it under the project's Settings → Environment Variables for Production and Preview. This skips ONNX Runtime's optional CUDA download from NuGet; the bundled CPU runtime supports the audio worker. The install command in `vercel.json` also sets this variable and should remain until the project environment setting has been verified during dependency installation.
 
@@ -50,7 +50,7 @@ public/cursors/               large cursor images for the accessibility toolbar
 src/
   app/                        routes (App Router); one folder per URL
     layout.tsx                fonts, metadata, pre-paint accessibility script, header/main/footer
-    globals.css               design tokens for every display mode, Tailwind theme, toolbar styles
+    globals.css               design tokens, Tailwind theme and host accessibility effects
     page.tsx                  homepage (assembles the section components)
     departments/[slug]/       department pages, generated from content at build time
     sitemap.ts, robots.ts, not-found.tsx
@@ -58,11 +58,11 @@ src/
     ui/                       Button, LinkButton, Card, Container, SectionHeading, Icon, ImageFrame, Select
     layout/                   SiteHeader, MainNav, MobileNav, SiteFooter, PageShell, SkipLink, Wordmark, GirihPattern, GirihSeam
     sections/                 homepage and page sections (Hero, Programs, Departments, …)
-    a11y/                     accessibility toolbar, its panels and reading aids
+    a11y/                     npm toolbar host and RCET accessibility triggers
   content/                    typed content: the single source of truth for copy and data
   lib/
     content.ts                async getters over src/content (swap this file for a CMS)
-    a11y/                     toolbar preferences, store, speech, focus sound, voice control
+    a11y/                     RCET audio pronunciation adapter and integration tests
   types/content.ts            TypeScript types for every content kind
 ```
 
@@ -108,7 +108,7 @@ All copy and data live in typed files under `src/content/`. The types are in `sr
 
 Rules:
 
-- Never invent content. Facts that still need confirmation are listed in `src/content/issues.ts`. Keep a field `null` rather than guessing; empty fields render nothing.
+- Never invent content. Mark facts that still need confirmation in the entry's source status and notes. Keep a field `null` rather than guessing; empty fields render nothing.
 - Every content entry carries a `source` (URL, date checked, status). Update it when you verify something.
 
 To move to a CMS, reimplement the functions in `src/lib/content.ts` with the same signatures. They are already `async`.
@@ -128,8 +128,16 @@ How it works:
 
 - Preferences are stored in `localStorage` under `rcet:a11y:v1`.
 - They're applied as `data-*` attributes on `<html>` by a small inline script before the first paint, so there's no flash.
-- Everything is driven by CSS variables in `globals.css`.
+- RCET page effects use CSS variables in `globals.css`; the npm package supplies the toolbar's Shadow DOM styles.
 
 Read aloud and voice control use the browser's Web Speech API. Voice control only appears in browsers that support speech recognition, such as Chrome, Edge and Safari.
 
 Accessibility target: **WCAG 2.2 AA in every display mode.** Verify changes with keyboard-only use and an axe scan.
+
+## Reusable accessibility package
+
+RCET consumes `accessibility-toolbar` from the public npm registry. Install it with `npm install`; no registry configuration or authentication is required. The installed package includes documentation and examples in `node_modules/accessibility-toolbar/docs` and `node_modules/accessibility-toolbar/examples`.
+
+The installed package owns the toolbar UI, panels, reading tools, state and audio workers. It renders its UI inside Shadow DOM and supplies its own styles. RCET retains page preference styles in `globals.css` because `ToolbarHost.tsx` uses `pageEffects: "host"`, plus a small audio adapter for pronouncing RCET and UET. Audio setup runs the package's `a11y-audio-setup` CLI directly; no local archive or package build script is needed.
+
+The installed package includes `README.md`, `docs/INTEGRATION.md`, `docs/API.md`, `docs/AUDIO-SERVER.md`, and `docs/PUBLISHING.md`. Brand name, fonts, recordings and page effects are configured in `src/components/a11y/ToolbarHost.tsx`.

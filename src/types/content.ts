@@ -1,4 +1,4 @@
-export type VerificationStatus = "observed" | "needs-review";
+type VerificationStatus = "observed" | "needs-review";
 
 export interface ContentSource {
   readonly sourceUrl: string;
@@ -155,14 +155,6 @@ export interface ExtractedPage {
   readonly links: readonly ContentLink[];
   readonly imageIds: readonly string[];
   readonly source: ContentSource;
-}
-
-export interface ContentIssue {
-  readonly id: string;
-  readonly status: "TODO";
-  readonly affects: readonly string[];
-  readonly description: string;
-  readonly sourceUrls: readonly string[];
 }
 
 export interface StudentSociety {

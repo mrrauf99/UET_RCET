@@ -1,11 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["text2wav", "@breezystack/lamejs", "kokoro-js", "@huggingface/transformers"],
+  serverExternalPackages: ["@breezystack/lamejs", "kokoro-js", "@huggingface/transformers"],
   outputFileTracingIncludes: {
     "/api/a11y/audio": [
-      "./src/lib/a11y/audio-worker.mjs", "./src/lib/a11y/audio-text.mjs", "./.cache/a11y-audio/kokoro/**/*",
-      "./node_modules/text2wav/**/*", "./node_modules/@breezystack/lamejs/package.json", "./node_modules/@breezystack/lamejs/dist/lamejs.js",
+      "./node_modules/accessibility-toolbar/dist/**/*", "./node_modules/accessibility-toolbar/assets/**/*", "./.cache/a11y-audio/kokoro/**/*",
+      "./node_modules/@breezystack/lamejs/package.json", "./node_modules/@breezystack/lamejs/dist/lamejs.js",
       "./node_modules/kokoro-js/package.json", "./node_modules/kokoro-js/dist/kokoro.js",
       "./node_modules/kokoro-js/voices/bf_emma.bin", "./node_modules/kokoro-js/voices/bm_george.bin",
       "./node_modules/@huggingface/transformers/package.json", "./node_modules/@huggingface/transformers/dist/transformers.node.mjs",

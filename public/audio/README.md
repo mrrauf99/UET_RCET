@@ -6,4 +6,4 @@ The Recite Me toolbar synthesizes these tracks using Web Audio oscillators, chor
 
 Format: uncompressed 16-bit PCM WAV. The app plays these local recordings with looping enabled.
 
-This provenance note does not assert an open-source or Creative Commons license for the recordings. The previous CC0 substitute loops remain as `focus.ogg` and `deeper.ogg`, but the app no longer uses them.
+This provenance note does not assert an open-source or Creative Commons license for the recordings.

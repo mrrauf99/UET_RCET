@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useId, useRef, useState, type CSSProperties } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { cn } from "@/lib/cn";
-import { closeToolbar, openToolbar } from "@/lib/a11y/store";
+import { closeToolbar, openToolbar } from "accessibility-toolbar/core";
 import { openPanel } from "@/lib/rachna-gpt/store";
 import { childHrefs, isCurrentAmong, isCurrentPath } from "@/lib/nav";
 import type { ContentLink, NavItem } from "@/types/content";

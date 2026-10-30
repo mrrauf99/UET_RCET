@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "setup:audio": "node scripts/setup-audio.mjs",
+    "setup:audio": "a11y-audio-setup",
     "predev": "npm run setup:audio",
     "dev": "next dev",
     "prebuild": "npm run setup:audio",
@@ -15,6 +15,7 @@
   "dependencies": {
     "@breezystack/lamejs": "^1.2.7",
     "@huggingface/transformers": "^3.8.1",
+    "accessibility-toolbar": "^1.0.0",
     "kokoro-js": "^1.2.1",
     "next": "16.3.8",
     "react": "19.2.8",

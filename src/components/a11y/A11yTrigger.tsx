@@ -2,7 +2,8 @@
 
 import { Icon } from "@/components/ui/Icon";
 import { cn } from "@/lib/cn";
-import { openToolbar, useA11yState } from "@/lib/a11y/store";
+import { openToolbar } from "accessibility-toolbar/core";
+import { useA11yState } from "accessibility-toolbar/react";
 
 interface A11yTriggerProps {
   placement: "header" | "floating";
@@ -17,7 +18,6 @@ export function A11yTrigger({ placement }: A11yTriggerProps) {
       data-a11y-trigger={placement}
       title="Open accessibility toolbar"
       aria-expanded={toolbarOpen}
-      aria-controls={toolbarOpen ? "accessibility-toolbar" : undefined}
       onClick={(event) => openToolbar(event.currentTarget)}
       className={cn(
         "inline-flex items-center justify-center gap-2 font-bold",
